@@ -1,0 +1,2067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kusina - Recipe, Meal, & Grocery Aide</title>
+  
+  <!-- Favicon & Touch Icons -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Kusina">
+  <meta name="theme-color" content="#FCFAF7">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: {
+              50: '#FCFAF7',
+              100: '#F7F3EC',
+              200: '#EFE6D8',
+              300: '#E2D3BC',
+            },
+            charcoal: '#2D2A26',
+            terracotta: {
+              DEFAULT: '#C86D51',
+              hover: '#B35B40',
+              light: '#F8EFEA'
+            },
+            sage: {
+              DEFAULT: '#7A8B7B',
+              light: '#EBF0EC'
+            }
+          },
+          fontFamily: {
+            serif: ['"Playfair Display"', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            handwriting: ['"Caveat"', 'cursive'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #FCFAF7; color: #2D2A26; }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #F7F3EC; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #E2D3BC; border-radius: 4px; }
+    html { scroll-behavior: smooth; }
+  </style>
+</head>
+<body class="font-sans min-h-screen flex flex-col antialiased selection:bg-terracotta selection:text-white">
+
+  <!-- Floating Undo Restock Banner -->
+  <div id="undo-restock-banner" class="fixed bottom-5 right-5 z-50 bg-charcoal text-white p-4 rounded-2xl shadow-2xl flex items-center space-x-3 hidden animate-bounce">
+    <span class="text-xl">⚠️</span>
+    <div class="text-xs">
+      <p class="font-bold">Pantry Stock Deducted!</p>
+      <p class="text-[10px] text-gray-300">Made a mistake or testing?</p>
+    </div>
+    <button onclick="undoLastStockDeduction()" class="bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
+      ↺ Undo & Restock
+    </button>
+  </div>
+
+  <!-- Header -->
+  <header class="bg-cream-100 border-b border-cream-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
+      <div class="flex items-center space-x-2 min-w-0">
+        <span class="text-2xl sm:text-3xl flex-shrink-0">🌿</span>
+        <div class="truncate">
+          <h1 class="font-serif text-xl sm:text-2xl font-bold tracking-tight text-charcoal leading-none">Kusina</h1>
+          <p class="font-handwriting text-[11px] sm:text-xs text-terracotta font-semibold truncate">Recipe, Meal, & Grocery Aide</p>
+        </div>
+      </div>
+      
+      <!-- Action Controls -->
+      <div class="flex items-center space-x-1.5 flex-shrink-0">
+        <button id="sync-status-btn" onclick="handleAuthButtonClick()" class="p-2 sm:px-3 sm:py-1.5 text-xs font-semibold rounded-lg border transition flex items-center space-x-1" title="Admin Login / Logout">
+          <span id="sync-icon">🔒</span> <span id="sync-label" class="hidden sm:inline">Admin Login</span>
+        </button>
+        <button onclick="exportData()" class="p-2 sm:px-3 sm:py-1.5 text-xs font-medium text-charcoal bg-cream-50 hover:bg-cream-200 border border-cream-300 rounded-lg transition flex items-center space-x-1" title="Export Local Backup">
+          <span>📥</span> <span class="hidden sm:inline">Backup</span>
+        </button>
+        <label class="p-2 sm:px-3 sm:py-1.5 text-xs font-medium text-charcoal bg-cream-50 hover:bg-cream-200 border border-cream-300 rounded-lg transition cursor-pointer flex items-center space-x-1" title="Restore Local Backup">
+          <span>📤</span> <span class="hidden sm:inline">Restore</span>
+          <input type="file" id="importFileInput" onchange="importData(event)" class="hidden" accept=".json">
+        </label>
+      </div>
+    </div>
+    
+    <!-- Tab Navigation -->
+    <nav class="max-w-6xl mx-auto px-4 flex space-x-2 border-t border-cream-200/60 pt-1 overflow-x-auto custom-scroll">
+      <button onclick="switchTab('recipes')" id="tab-recipes" class="tab-btn px-4 py-2 text-sm font-semibold border-b-2 border-terracotta text-terracotta flex items-center space-x-2 whitespace-nowrap">
+        <span>📖</span> <span>Recipes</span>
+      </button>
+      <button onclick="switchTab('planner')" id="tab-planner" class="tab-btn px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-charcoal flex items-center space-x-2 whitespace-nowrap">
+        <span>📅</span> <span>Meal Plan</span>
+      </button>
+      <button onclick="switchTab('grocery')" id="tab-grocery" class="tab-btn px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-charcoal flex items-center space-x-2 whitespace-nowrap">
+        <span>🛒</span> <span>Grocery List</span>
+      </button>
+      <button onclick="switchTab('pantry')" id="tab-pantry" class="tab-btn px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-charcoal flex items-center space-x-2 whitespace-nowrap">
+        <span>🏺</span> <span>Pantry Stock</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main View Area -->
+  <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
+
+    <!-- 1. RECIPES TAB -->
+    <section id="view-recipes" class="space-y-5">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="font-serif text-2xl font-bold text-charcoal">Recipe Collection</h2>
+          <p class="text-xs text-gray-600">Browse master dishes, plan meals, and manage ingredients.</p>
+        </div>
+        <button id="add-recipe-admin-btn" onclick="openRecipeModal()" class="admin-only hidden bg-terracotta hover:bg-terracotta-hover text-white text-sm font-medium px-4 py-2 rounded-lg shadow-sm flex items-center justify-center space-x-2 transition self-start md:self-auto">
+          <span>+ Add New Recipe</span>
+        </button>
+      </div>
+
+      <!-- Controls -->
+      <div class="bg-cream-100 p-4 rounded-xl border border-cream-200 space-y-3">
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input type="text" id="recipe-search" oninput="renderRecipes()" placeholder="🔍 Search by dish name or ingredient..." class="flex-1 px-3 py-2 text-xs rounded-lg border border-cream-300 focus:outline-none focus:ring-1 focus:ring-terracotta bg-white">
+          <select id="recipe-sort" onchange="renderRecipes()" class="px-3 py-2 text-xs rounded-lg border border-cream-300 bg-white font-medium text-charcoal">
+            <option value="name-asc">Sort: Name (A-Z)</option>
+            <option value="name-desc">Sort: Name (Z-A)</option>
+            <option value="date-newest">Sort: Date Created (Newest)</option>
+            <option value="date-oldest">Sort: Date Created (Oldest)</option>
+          </select>
+        </div>
+        
+        <div id="recipe-type-filters" class="flex flex-wrap gap-1.5 pt-1"></div>
+      </div>
+
+      <div id="recipe-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- 2. MEAL PLANNER TAB -->
+    <section id="view-planner" class="space-y-5 hidden">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="font-serif text-2xl font-bold text-charcoal">Meal Planner</h2>
+          <p class="text-xs text-gray-600">Assign multiple dishes per day in Weekly or Monthly view.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="bg-cream-200 p-0.5 rounded-lg flex text-xs font-semibold">
+            <button onclick="setPlannerView('week')" id="view-btn-week" class="px-3 py-1.5 rounded-md bg-white shadow-sm text-charcoal">Weekly</button>
+            <button onclick="setPlannerView('month')" id="view-btn-month" class="px-3 py-1.5 rounded-md text-gray-500 hover:text-charcoal">Monthly</button>
+          </div>
+          <div class="flex items-center space-x-1">
+            <button onclick="navigatePlanner(-1)" class="px-2.5 py-1.5 bg-cream-100 hover:bg-cream-200 border border-cream-300 rounded-lg text-xs">👈 Prev</button>
+            <span id="planner-period-label" class="text-xs font-bold text-charcoal px-2 min-w-[140px] text-center"></span>
+            <button onclick="navigatePlanner(1)" class="px-2.5 py-1.5 bg-cream-100 hover:bg-cream-200 border border-cream-300 rounded-lg text-xs">Next 👉</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="planner-calendar-grid" class="grid gap-2"></div>
+    </section>
+
+    <!-- 3. GROCERY LIST TAB -->
+    <section id="view-grocery" class="space-y-5 hidden">
+      <div class="bg-cream-100 p-4 rounded-xl border border-cream-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="font-serif text-xl font-bold text-charcoal">Smart Grocery Aggregator</h2>
+          <p class="text-xs text-gray-600">Auto-converts measurements into unified units (ml / g) and auto-adds out-of-stock Household & Other items.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="text-xs font-semibold text-gray-600">From:</label>
+          <input type="date" id="grocery-start-date" class="px-2 py-1 text-xs border border-cream-300 rounded-md bg-white">
+          <label class="text-xs font-semibold text-gray-600">To:</label>
+          <input type="date" id="grocery-end-date" class="px-2 py-1 text-xs border border-cream-300 rounded-md bg-white">
+          <button onclick="generateGroceryList()" class="bg-terracotta hover:bg-terracotta-hover text-white text-xs font-medium px-3 py-1.5 rounded-md transition">
+            Generate
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-xl border border-cream-200 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-cream-200 pb-3">
+          <h3 class="font-serif font-bold text-lg text-charcoal">Categorized Shopping List</h3>
+          <span id="grocery-count-badge" class="text-xs bg-cream-200 text-charcoal px-2.5 py-0.5 rounded-full font-semibold">0 items</span>
+        </div>
+
+        <div id="grocery-categories-container" class="space-y-4">
+          <p class="text-center text-gray-400 text-sm py-6">Select a date range and click Generate to build your list.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. PANTRY TAB -->
+    <section id="view-pantry" class="space-y-5 hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="font-serif text-2xl font-bold text-charcoal">Pantry Inventory</h2>
+          <p class="text-xs text-gray-600">Tap any ingredient to adjust stock or recategorize it.</p>
+        </div>
+        <button onclick="cleanupPantryDuplicates()" class="bg-cream-100 hover:bg-cream-200 text-charcoal text-xs font-semibold px-3 py-2 rounded-lg border border-cream-300 transition self-start sm:self-auto">
+          🧹 Merge Duplicates
+        </button>
+      </div>
+
+      <div id="pantry-jump-pills" class="flex flex-wrap gap-1.5 overflow-x-auto custom-scroll pb-1"></div>
+
+      <div class="bg-cream-100 p-4 rounded-xl border border-cream-200 flex flex-wrap gap-2 items-center">
+        <input type="text" id="pantry-name-input" placeholder="Custom Item (e.g. Olive Oil)" class="flex-1 min-w-[150px] px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+        <input type="number" id="pantry-qty-input" placeholder="Qty" step="0.1" class="w-20 px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+        <select id="pantry-unit-input" class="w-24 px-2 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+          <option value="ml">ml</option>
+          <option value="g">g</option>
+          <option value="pcs">pcs</option>
+          <option value="tbsp">tbsp</option>
+          <option value="tsp">tsp</option>
+          <option value="cup">cup</option>
+          <option value="clove">clove</option>
+          <option value="pinch">pinch</option>
+        </select>
+        <select id="pantry-cat-input" class="w-36 px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white"></select>
+        <button onclick="addCustomPantryItem()" class="bg-sage hover:opacity-90 text-white text-xs font-medium px-4 py-2 rounded-lg transition">
+          + Add Stock
+        </button>
+      </div>
+
+      <div id="pantry-container" class="space-y-3"></div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-auto py-6 border-t border-cream-200 bg-cream-100 text-left px-6 text-xs text-gray-500 font-medium">
+    <div>Prompt Coded by ✈️.</div>
+    <div>September 2026. <span onclick="openChangelogModal()" class="text-terracotta font-bold hover:underline cursor-pointer">v18</span></div>
+  </footer>
+
+  <!-- MODAL: CHANGELOG -->
+  <div id="changelog-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-cream-50 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-xl border border-cream-200 overflow-hidden">
+      <div class="px-5 py-3 bg-cream-100 border-b border-cream-200 flex items-center justify-between">
+        <h3 class="font-serif font-bold text-charcoal text-base">📜 Complete Changelog History</h3>
+        <button onclick="closeChangelogModal()" class="text-gray-400 hover:text-charcoal text-xl">&times;</button>
+      </div>
+      
+      <div class="p-5 overflow-y-auto space-y-4 custom-scroll text-xs flex-1">
+        
+        <div class="border-l-2 border-terracotta pl-3 space-y-1">
+          <span class="font-bold text-charcoal">v18 — Async State Protection, Force Delete & Servings Sync</span>
+          <p class="text-gray-600">Prevented blank screens on refresh with local-first async fallback protection, added "Rice" to dish types, enabled force-delete option for duplicate pantry items (solving Olive Oil unit mismatch), fixed servings display card sync, and removed pencil icons from pantry rows to widen text area.</p>
+        </div>
+
+        <div class="border-l-2 border-cream-300 pl-3 space-y-1">
+          <span class="font-bold text-charcoal">v17 — Dynamic Stock Deduction, Granular Sync & Smart Aliasing</span>
+          <p class="text-gray-600">Added interactive pantry stock deduction at the end of Cook Mode (with a 1-tap Undo safety banner), implemented fuzzy ingredient matching & aliasing across all 4 tools, enabled non-destructive granular per-recipe Firebase writes, and added weight-to-volume unit conversions.</p>
+        </div>
+
+        <div class="border-l-2 border-cream-300 pl-3 space-y-1">
+          <span class="font-bold text-charcoal">v16 — One-Tap Logout, Color Lock Icons & Grocery Inspector Fix</span>
+          <p class="text-gray-600">Updated status button to allow instant logout without re-prompting for password, color-coded the admin lock icons (Red = Locked, Green = Logged In), alphabetized items inside grocery category folds, and fixed case-sensitivity mapping in the ingredient inspector.</p>
+        </div>
+
+        <div class="border-l-2 border-cream-300 pl-3 space-y-1">
+          <span class="font-bold text-charcoal">v1-v15 — Core Architecture & Feature Expansions</span>
+          <p class="text-gray-600">Initial release featuring Recipe Manager, Pantry Inventory, Calorie Density Calculator, Dynamic Autocomplete, Grocery Aggregation, and Focus View.</p>
+        </div>
+
+      </div>
+
+      <div class="p-3 bg-cream-100 border-t border-cream-200 text-right">
+        <button onclick="closeChangelogModal()" class="px-4 py-1.5 bg-cream-200 text-charcoal text-xs font-semibold rounded-lg">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DEDUCT PANTRY CONFIRMATION -->
+  <div id="deduct-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-cream-50 rounded-2xl max-w-sm w-full p-5 shadow-xl border border-cream-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-cream-200 pb-2">
+        <h3 class="font-serif font-bold text-charcoal">Confirm Pantry Deduction</h3>
+        <button onclick="closeDeductModal()" class="text-gray-400 hover:text-charcoal text-xl">&times;</button>
+      </div>
+
+      <p class="text-xs text-gray-600">The following quantities will be subtracted from your active Pantry Stock:</p>
+
+      <div id="deduct-preview-list" class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll text-xs"></div>
+
+      <div class="flex justify-end space-x-2 pt-2 border-t border-cream-200">
+        <button onclick="closeDeductModal()" class="px-3 py-1.5 text-xs text-gray-600 bg-cream-200 rounded-md font-medium">Cancel</button>
+        <button onclick="confirmAndDeductStock()" class="px-4 py-1.5 text-xs bg-terracotta text-white rounded-md font-bold shadow-sm hover:bg-terracotta-hover">Confirm & Deduct</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT PANTRY ITEM -->
+  <div id="pantry-edit-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-cream-50 rounded-2xl max-w-sm w-full p-5 shadow-xl border border-cream-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-cream-200 pb-2">
+        <h3 class="font-serif font-bold text-charcoal">Edit Pantry Stock</h3>
+        <button onclick="closePantryEditModal()" class="text-gray-400 hover:text-charcoal text-xl">&times;</button>
+      </div>
+
+      <input type="hidden" id="edit-pantry-id">
+      
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Ingredient Name</label>
+          <input type="text" id="edit-pantry-name" class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Current Stock Qty</label>
+            <input type="number" id="edit-pantry-qty" step="0.1" class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Unit</label>
+            <select id="edit-pantry-unit" class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white font-bold text-charcoal">
+              <option value="g">g</option>
+              <option value="kg">kg</option>
+              <option value="ml">ml</option>
+              <option value="l">l</option>
+              <option value="pcs">pcs</option>
+              <option value="tbsp">tbsp</option>
+              <option value="tsp">tsp</option>
+              <option value="cup">cup</option>
+              <option value="clove">clove</option>
+              <option value="pinch">pinch</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Pantry Category</label>
+          <select id="edit-pantry-cat" class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white"></select>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center pt-2 border-t border-cream-200">
+        <button onclick="openPantryIngredientInspector(document.getElementById('edit-pantry-name').value)" class="text-xs text-terracotta font-semibold hover:underline">🔍 Inspect Recipes</button>
+        <div class="flex space-x-2">
+          <button onclick="closePantryEditModal()" class="px-3 py-1.5 text-xs text-gray-600 bg-cream-200 rounded-md font-medium">Cancel</button>
+          <button onclick="savePantryItemEdit()" class="px-4 py-1.5 text-xs bg-terracotta text-white rounded-md font-bold shadow-sm hover:bg-terracotta-hover">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN LOGIN POPUP MODAL -->
+  <div id="login-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-cream-50 rounded-2xl max-w-sm w-full p-6 shadow-xl border border-cream-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-cream-200 pb-2">
+        <h3 class="font-serif font-bold text-charcoal">Admin Login</h3>
+        <button onclick="closeLoginModal()" class="text-gray-400 hover:text-charcoal text-xl">&times;</button>
+      </div>
+      
+      <p class="text-xs text-gray-600">Enter the admin password to publish and manage master recipes in the Kusina database.</p>
+      
+      <div>
+        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Password</label>
+        <input type="password" id="admin-password-input" placeholder="Enter password..." class="w-full px-3 py-2 text-xs rounded-lg border border-cream-300 focus:outline-none focus:ring-1 focus:ring-terracotta bg-white">
+      </div>
+
+      <div class="flex justify-end items-center space-x-2 pt-2">
+        <button onclick="closeLoginModal()" class="px-3 py-1.5 text-xs text-gray-600 bg-cream-200 rounded-md font-medium">Cancel</button>
+        <button onclick="attemptLogin()" class="px-4 py-1.5 text-xs bg-terracotta text-white rounded-md font-bold shadow-sm hover:bg-terracotta-hover">Login</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 1: ADD / EDIT RECIPE -->
+  <div id="recipe-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-cream-50 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-xl border border-cream-200 overflow-hidden">
+      <div class="px-6 py-4 bg-cream-100 border-b border-cream-200 flex items-center justify-between">
+        <h3 id="modal-recipe-title" class="font-serif font-bold text-lg text-charcoal">New Recipe</h3>
+        <button onclick="closeRecipeModal()" class="text-gray-400 hover:text-charcoal text-2xl">&times;</button>
+      </div>
+      
+      <div class="p-6 overflow-y-auto space-y-4 custom-scroll flex-1">
+        <input type="hidden" id="form-recipe-id">
+        <input type="hidden" id="form-recipe-created">
+        
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Recipe Name</label>
+          <input type="text" id="form-recipe-name" placeholder="e.g. Chicken Adobo" class="w-full px-3 py-2 text-xs rounded-lg border border-cream-300 focus:outline-none focus:ring-1 focus:ring-terracotta bg-white">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Dish Type</label>
+            <select id="form-recipe-type" class="w-full px-3 py-2 text-xs rounded-lg border border-cream-300 bg-white">
+              <option value="🍗 Chicken">🍗 Chicken</option>
+              <option value="🥩 Beef">🥩 Beef</option>
+              <option value="🥓 Pork">🥓 Pork</option>
+              <option value="🐟 Fish / Seafood">🐟 Fish / Seafood</option>
+              <option value="🥗 Vegetable">🥗 Vegetable</option>
+              <option value="🍝 Pasta">🍝 Pasta</option>
+              <option value="🍚 Rice">🍚 Rice</option>
+              <option value="🥪 Sandwich">🥪 Sandwich</option>
+              <option value="🍲 Soup / Stew">🍲 Soup / Stew</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Servings</label>
+            <input type="number" id="form-recipe-servings" placeholder="e.g. 2" min="1" value="2" class="w-full px-3 py-2 text-xs rounded-lg border border-cream-300 bg-white">
+          </div>
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600">Total Calories</label>
+              <button onclick="autoCalculateCalories()" type="button" class="text-[9px] text-terracotta font-bold hover:underline">✨ Auto-Calc</button>
+            </div>
+            <input type="number" id="form-recipe-calories" placeholder="e.g. 800" min="0" class="w-full px-3 py-2 text-xs rounded-lg border border-cream-300 bg-white">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Ingredients</label>
+          <div id="ingredients-rows" class="space-y-2"></div>
+          <button onclick="addIngredientRow()" class="mt-2 text-xs text-terracotta font-semibold hover:underline block">+ Add Row</button>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Cooking Steps</label>
+          <div id="steps-rows" class="space-y-2"></div>
+          <button onclick="addStepRow()" class="mt-2 text-xs text-terracotta font-semibold hover:underline block">+ Add Step</button>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 bg-cream-100 border-t border-cream-200 flex justify-start space-x-3">
+        <button onclick="saveRecipe()" class="px-5 py-2 text-xs bg-terracotta hover:bg-terracotta-hover text-white rounded-lg font-bold shadow-sm">Save Recipe</button>
+        <button onclick="closeRecipeModal()" class="px-4 py-2 text-xs text-gray-600 hover:text-charcoal font-medium border border-cream-300 rounded-lg bg-white">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: ASSIGN MULTIPLE DISHES TO MEAL PLAN -->
+  <div id="assign-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-cream-50 rounded-2xl max-w-md w-full p-5 shadow-xl border border-cream-200 space-y-3">
+      <div class="flex items-center justify-between border-b border-cream-200 pb-2">
+        <h3 id="assign-modal-date" class="font-serif font-bold text-charcoal text-sm">Meals for Date</h3>
+        <button onclick="closeAssignModal()" class="text-gray-400 hover:text-charcoal text-xl">&times;</button>
+      </div>
+      
+      <div>
+        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Scheduled Dishes for Day</label>
+        <div id="current-assigned-list" class="space-y-1.5 max-h-32 overflow-y-auto custom-scroll"></div>
+      </div>
+
+      <div class="border-t border-cream-200 pt-2 space-y-2">
+        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-500">Add Dish to Day</label>
+        <input type="text" id="assign-search" oninput="renderAssignRecipeList()" placeholder="🔍 Search dishes..." class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+        <div id="assign-type-filters" class="flex flex-wrap gap-1"></div>
+      </div>
+
+      <div class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll" id="assign-recipe-list"></div>
+
+      <div class="flex justify-between items-center pt-2 border-t border-cream-200">
+        <button onclick="clearDayRecipes()" class="text-xs text-red-600 font-semibold hover:underline">Clear Entire Day</button>
+        <button onclick="closeAssignModal()" class="px-3 py-1.5 text-xs bg-cream-200 text-charcoal rounded-md font-medium">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: INGREDIENT RECIPE INSPECTOR -->
+  <div id="inspector-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-cream-50 rounded-2xl max-w-md w-full p-5 shadow-xl border border-cream-200 space-y-3">
+      <div class="flex items-center justify-between border-b border-cream-200 pb-2">
+        <h3 id="inspector-title" class="font-serif font-bold text-charcoal">Ingredient Inspector</h3>
+        <button onclick="closeInspectorModal()" class="text-gray-400 hover:text-charcoal text-xl">&times;</button>
+      </div>
+
+      <div class="space-y-2">
+        <input type="text" id="inspector-search" oninput="filterInspectorRecipes()" placeholder="🔍 Filter dishes using this ingredient..." class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+        <div id="inspector-type-filters" class="flex flex-wrap gap-1"></div>
+      </div>
+
+      <div id="inspector-body" class="space-y-2 text-xs text-charcoal max-h-60 overflow-y-auto custom-scroll"></div>
+      
+      <div class="text-right pt-2 border-t border-cream-200">
+        <button onclick="closeInspectorModal()" class="px-3 py-1.5 text-xs bg-cream-200 rounded-md font-medium">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: RECIPE PREVIEW MODAL -->
+  <div id="preview-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-cream-50 rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-xl border border-cream-200 overflow-hidden">
+      <div class="px-6 py-4 bg-cream-100 border-b border-cream-200 flex items-center justify-between">
+        <div>
+          <span id="preview-type-badge" class="text-[10px] font-semibold text-terracotta bg-terracotta-light px-2.5 py-0.5 rounded-full"></span>
+          <h3 id="preview-title" class="font-serif font-bold text-xl text-charcoal mt-1"></h3>
+        </div>
+        <button onclick="closePreviewModal()" class="text-gray-400 hover:text-charcoal text-2xl">&times;</button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4 custom-scroll flex-1">
+        <div class="grid grid-cols-2 gap-2 bg-cream-100 p-3 rounded-xl text-center">
+          <div>
+            <span class="text-[10px] font-bold uppercase text-gray-500 block">Servings</span>
+            <span id="preview-servings" class="text-sm font-bold text-charcoal"></span>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold uppercase text-gray-500 block">Calories / Serving</span>
+            <span id="preview-cal-per-serving" class="text-sm font-bold text-terracotta"></span>
+          </div>
+        </div>
+
+        <!-- Cook Mode Action Banner -->
+        <button id="preview-start-cook-btn" class="w-full py-3 bg-sage hover:opacity-90 text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center space-x-2 transition">
+          <span>🍳</span> <span>Start Cook Mode (Focus View)</span>
+        </button>
+
+        <div>
+          <h4 class="font-bold text-xs uppercase tracking-wider text-gray-500 mb-2">Ingredients Needed</h4>
+          <ul id="preview-ingredients-list" class="space-y-1 divide-y divide-cream-100"></ul>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-xs uppercase tracking-wider text-gray-500 mb-2">Cooking Instructions</h4>
+          <ol id="preview-steps-list" class="space-y-2 list-decimal list-inside text-xs text-charcoal"></ol>
+        </div>
+      </div>
+
+      <div class="px-6 py-3 bg-cream-100 border-t border-cream-200 flex justify-between items-center">
+        <button id="preview-edit-btn" class="admin-only hidden text-xs text-terracotta font-bold hover:underline">✏️ Edit Recipe</button>
+        <button onclick="closePreviewModal()" class="px-4 py-1.5 text-xs bg-cream-200 text-charcoal rounded-lg font-medium ml-auto">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: FULLSCREEN COOK MODE / FOCUS VIEW -->
+  <div id="cook-mode-modal" class="fixed inset-0 bg-cream-50 z-50 flex flex-col hidden overflow-hidden">
+    <!-- Header -->
+    <div class="px-5 py-3 bg-cream-100 border-b border-cream-200 flex items-center justify-between shadow-sm flex-shrink-0">
+      <div class="flex items-center space-x-2 min-w-0">
+        <span class="text-2xl flex-shrink-0">🍳</span>
+        <div class="truncate">
+          <h3 id="cook-title" class="font-serif font-bold text-lg text-charcoal truncate"></h3>
+          <p id="cook-wake-lock-status" class="text-[10px] text-sage font-bold">💡 Screen Stay-Awake: Active</p>
+        </div>
+      </div>
+      <button onclick="exitCookMode()" class="px-3 py-1.5 bg-cream-200 hover:bg-cream-300 text-charcoal font-bold text-xs rounded-lg transition">
+        ✕ Exit
+      </button>
+    </div>
+
+    <!-- Progress Tracker -->
+    <div class="bg-cream-200/60 h-1.5 w-full flex-shrink-0">
+      <div id="cook-progress-bar" class="bg-terracotta h-full w-0 transition-all duration-300"></div>
+    </div>
+
+    <!-- Scrollable Content -->
+    <div class="flex-1 overflow-y-auto p-5 max-w-2xl mx-auto w-full space-y-6 custom-scroll">
+      
+      <!-- Ingredients Checklist -->
+      <details open class="bg-white rounded-2xl border border-cream-200 shadow-sm overflow-hidden">
+        <summary class="px-4 py-3 bg-cream-100 font-bold text-xs uppercase tracking-wider text-charcoal cursor-pointer flex justify-between items-center select-none">
+          <span>1. Prep Ingredients</span>
+          <span id="cook-ing-badge" class="text-[10px] bg-cream-200 px-2 py-0.5 rounded-full text-gray-600">0 checked</span>
+        </summary>
+        <div id="cook-ingredients-list" class="p-4 space-y-2 divide-y divide-cream-100 text-xs"></div>
+      </details>
+
+      <!-- Cooking Steps -->
+      <div class="space-y-3">
+        <h4 class="font-bold text-xs uppercase tracking-wider text-gray-500 px-1">2. Cooking Steps</h4>
+        <div id="cook-steps-list" class="space-y-3"></div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="p-4 bg-cream-100 border-t border-cream-200 flex items-center justify-between flex-shrink-0 flex-wrap gap-2">
+      <button onclick="resetCookProgress()" class="text-xs text-gray-500 font-semibold hover:text-terracotta">
+        🔄 Reset Progress
+      </button>
+      
+      <div class="flex items-center space-x-2 ml-auto">
+        <button onclick="exitCookMode()" class="px-3 py-2 bg-cream-200 hover:bg-cream-300 text-charcoal text-xs font-bold rounded-xl transition">
+          Done (Keep Stock)
+        </button>
+        <button onclick="openDeductModal()" class="px-4 py-2 bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold rounded-xl shadow-sm transition">
+          Done & Deduct Stock 📦
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const FIREBASE_DB_URL = "https://kusina-app-b4cb6-default-rtdb.asia-southeast1.firebasedatabase.app/";
+    const ADMIN_PASS = "#Kusina920";
+
+    const categories = [
+      "🥬 Produce", "🥩 Meat & Seafood", "🥛 Dairy & Eggs", 
+      "🍞 Bakery", "🧂 Pantry Staples", "🍟 Snacks", "🧊 Frozen", 
+      "🥤 Beverages", "🧼 Household", "📦 Other"
+    ];
+
+    const dishTypes = ["ALL", "🍗 Chicken", "🥩 Beef", "🥓 Pork", "🐟 Fish / Seafood", "🥗 Vegetable", "🍝 Pasta", "🍚 Rice", "🥪 Sandwich", "🍲 Soup / Stew"];
+    const validUnits = ["g", "kg", "ml", "l", "pcs", "tbsp", "tsp", "cup", "clove", "pinch"];
+
+    const CALORIE_DENSITY = {
+      chicken: 1.65, beef: 2.5, pork: 2.4, fish: 1.3, shrimp: 1.0, egg: 70,
+      spaghetti: 1.5, pasta: 1.5, rice: 1.3, butter: 7.1, oil: 8.8, cheese: 4.0,
+      garlic: 5, onion: 10, honey: 3.0, soy: 0.5, milk: 0.6, flour: 3.6, bread: 2.6
+    };
+
+    const DENSITY_MAP = {
+      butter: 227, flour: 120, sugar: 200, oil: 218, milk: 245, water: 240, rice: 180
+    };
+
+    function normalizeMeasurement(qty, unit, ingredientName = '') {
+      const q = parseFloat(qty) || 0;
+      const u = (unit || 'pcs').toLowerCase().trim();
+      const ing = (ingredientName || '').toLowerCase().trim();
+
+      if (u === 'tbsp') return { qty: q * 15, unit: 'ml' };
+      if (u === 'tsp') return { qty: q * 5, unit: 'ml' };
+      if (u === 'l') return { qty: q * 1000, unit: 'ml' };
+      if (u === 'kg') return { qty: q * 1000, unit: 'g' };
+      if (u === 'grams' || u === 'gram') return { qty: q, unit: 'g' };
+      if (u === 'pieces' || u === 'piece' || u === 'rolls') return { qty: q, unit: 'pcs' };
+
+      if (u === 'cup') {
+        let density = 240;
+        for (const [key, val] of Object.entries(DENSITY_MAP)) {
+          if (ing.includes(key)) {
+            return { qty: q * val, unit: 'g' };
+          }
+        }
+        return { qty: q * density, unit: 'ml' };
+      }
+
+      return { qty: q, unit: u };
+    }
+
+    function makeKey(str) {
+      if (!str) return '';
+      let s = str.toLowerCase().trim();
+      s = s.replace(/[^a-z0-9\s]/g, '');
+      s = s.replace(/\b(cloves|clove|pieces|piece|heads|head|stalks|stalk|slices|slice|grams|gram)\b/g, '');
+      s = s.replace(/(s|es)$/g, '');
+      return s.trim().replace(/\s+/g, '');
+    }
+
+    const INITIAL_RECIPES = [
+      {
+        id: "rec-1",
+        name: "Garlic Butter Pasta",
+        type: "🍝 Pasta",
+        servings: 2,
+        calories: 650,
+        createdAt: Date.now() - 100000,
+        modifiedAt: Date.now() - 100000,
+        ingredients: [
+          { name: "Spaghetti", qty: 250, unit: "g", category: "🧂 Pantry Staples" },
+          { name: "Garlic Cloves", qty: 4, unit: "clove", category: "🥬 Produce" },
+          { name: "Butter", qty: 30, unit: "g", category: "🥛 Dairy & Eggs" },
+          { name: "Parmesan Cheese", qty: 50, unit: "g", category: "🥛 Dairy & Eggs" }
+        ],
+        steps: ["Boil spaghetti in salted water until al dente.", "Sauté minced garlic in butter until fragrant.", "Toss pasta in garlic butter and top with parmesan."]
+      }
+    ];
+
+    let recipes = JSON.parse(localStorage.getItem('ks_recipes')) || INITIAL_RECIPES;
+    let pantry = JSON.parse(localStorage.getItem('ks_pantry')) || [];
+    let mealPlans = JSON.parse(localStorage.getItem('ks_mealPlans')) || {};
+    let isLoggedIn = localStorage.getItem('ks_isLoggedIn') === 'true';
+
+    let selectedTypeFilter = "ALL";
+    let assignTypeFilter = "ALL";
+    let inspectorTypeFilter = "ALL";
+    
+    let plannerMode = "week";
+    let plannerOffset = 0;
+    let selectedDateForAssign = null;
+    let currentGroceryUsageMap = {};
+    let currentInspectedIngredient = "";
+
+    let wakeLockSentinel = null;
+    let activeCookRecipe = null;
+    let previousPantrySnapshot = null;
+
+    function openChangelogModal() {
+      document.getElementById('changelog-modal').classList.remove('hidden');
+    }
+
+    function closeChangelogModal() {
+      document.getElementById('changelog-modal').classList.add('hidden');
+    }
+
+    function handleAuthButtonClick() {
+      if (isLoggedIn) {
+        if (confirm("Log out of Admin Mode?")) {
+          logoutAdmin();
+        }
+      } else {
+        openLoginModal();
+      }
+    }
+
+    function updateSyncUI() {
+      const btn = document.getElementById('sync-status-btn');
+      const icon = document.getElementById('sync-icon');
+      const label = document.getElementById('sync-label');
+
+      if (isLoggedIn) {
+        btn.className = "p-2 sm:px-3 sm:py-1.5 text-xs font-bold rounded-lg border transition flex items-center space-x-1 bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100";
+        icon.textContent = "🔓";
+        label.textContent = "Admin Active";
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+      } else {
+        btn.className = "p-2 sm:px-3 sm:py-1.5 text-xs font-semibold rounded-lg border transition flex items-center space-x-1 bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100";
+        icon.textContent = "🔒";
+        label.textContent = "Admin Login";
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+      }
+    }
+
+    async function saveRecipeToCloud(recipeObj) {
+      if (!isLoggedIn) return;
+      try {
+        await fetch(`${FIREBASE_DB_URL}recipes/${recipeObj.id}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(recipeObj)
+        });
+      } catch (e) {
+        console.error("Firebase single recipe sync error:", e);
+      }
+    }
+
+    async function deleteRecipeFromCloud(recipeId) {
+      if (!isLoggedIn) return;
+      try {
+        await fetch(`${FIREBASE_DB_URL}recipes/${recipeId}.json`, { method: 'DELETE' });
+      } catch (e) {
+        console.error("Firebase recipe delete error:", e);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('ks_recipes', JSON.stringify(recipes));
+      localStorage.setItem('ks_pantry', JSON.stringify(pantry));
+      localStorage.setItem('ks_mealPlans', JSON.stringify(mealPlans));
+    }
+
+    // Local-First Async State Fallback Protection (Prevents Blank Screen on Refresh)
+    async function fetchPublicMasterRecipes() {
+      try {
+        const res = await fetch(`${FIREBASE_DB_URL}recipes.json`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            recipes = Object.values(data);
+            saveState();
+            syncPantryWithRecipes();
+            renderRecipes();
+          }
+        }
+      } catch (e) {
+        console.warn("Using offline/cached local recipe state:", e);
+      }
+    }
+
+    function openLoginModal() {
+      document.getElementById('admin-password-input').value = '';
+      document.getElementById('login-modal').classList.remove('hidden');
+    }
+
+    function closeLoginModal() {
+      document.getElementById('login-modal').classList.add('hidden');
+    }
+
+    async function attemptLogin() {
+      const input = document.getElementById('admin-password-input').value;
+      if (input === ADMIN_PASS) {
+        isLoggedIn = true;
+        localStorage.setItem('ks_isLoggedIn', 'true');
+        updateSyncUI();
+        closeLoginModal();
+        await fetchPublicMasterRecipes();
+        renderRecipes();
+        alert("Admin Mode active!");
+      } else {
+        alert("Incorrect password.");
+      }
+    }
+
+    function logoutAdmin() {
+      isLoggedIn = false;
+      localStorage.setItem('ks_isLoggedIn', 'false');
+      updateSyncUI();
+      renderRecipes();
+    }
+
+    function syncPantryWithRecipes() {
+      const consolidatedPantryMap = {};
+
+      pantry.forEach(p => {
+        const normalizedName = p.name.trim();
+        const norm = normalizeMeasurement(p.qty, p.unit, p.name);
+        const key = `${makeKey(normalizedName)}_${norm.unit}`;
+
+        if (!consolidatedPantryMap[key]) {
+          consolidatedPantryMap[key] = {
+            id: p.id || `pan-${Date.now()}-${Math.random()}`,
+            name: normalizedName,
+            qty: norm.qty,
+            unit: norm.unit,
+            category: p.category || '🧂 Pantry Staples',
+            modifiedAt: p.modifiedAt || Date.now()
+          };
+        } else {
+          consolidatedPantryMap[key].qty += norm.qty;
+          if (p.modifiedAt > consolidatedPantryMap[key].modifiedAt) {
+            consolidatedPantryMap[key].modifiedAt = p.modifiedAt;
+          }
+        }
+      });
+
+      recipes.forEach(r => {
+        if (r.ingredients) {
+          r.ingredients.forEach(ing => {
+            const ingName = ing.name.trim();
+            const norm = normalizeMeasurement(ing.qty, ing.unit, ing.name);
+            const key = `${makeKey(ingName)}_${norm.unit}`;
+
+            if (!consolidatedPantryMap[key]) {
+              consolidatedPantryMap[key] = {
+                id: `pan-${Date.now()}-${Math.random()}`,
+                name: ingName,
+                qty: 0,
+                unit: norm.unit,
+                category: ing.category || '🧂 Pantry Staples',
+                modifiedAt: Date.now()
+              };
+            }
+          });
+        }
+      });
+
+      pantry = Object.values(consolidatedPantryMap);
+      saveState();
+    }
+
+    function cleanupPantryDuplicates() {
+      const mergedMap = {};
+
+      pantry.forEach(item => {
+        const nameKey = makeKey(item.name);
+        let norm = normalizeMeasurement(item.qty, item.unit, item.name);
+
+        if (!mergedMap[nameKey]) {
+          mergedMap[nameKey] = {
+            id: item.id,
+            name: item.name.trim(),
+            qty: norm.qty,
+            unit: norm.unit,
+            category: item.category || '🧂 Pantry Staples',
+            modifiedAt: item.modifiedAt || Date.now()
+          };
+        } else {
+          const target = mergedMap[nameKey];
+          let addedQty = norm.qty;
+
+          if (target.unit === 'g' && norm.unit === 'pcs') {
+            addedQty = norm.qty * 3.0;
+          } else if (target.unit === 'pcs' && norm.unit === 'g') {
+            target.unit = 'g';
+            target.qty = (target.qty * 3.0) + norm.qty;
+            addedQty = 0;
+          }
+
+          target.qty += addedQty;
+          if ((item.modifiedAt || 0) > (target.modifiedAt || 0)) {
+            target.modifiedAt = item.modifiedAt;
+          }
+        }
+      });
+
+      pantry = Object.values(mergedMap);
+      syncPantryWithRecipes();
+      renderPantry();
+      alert('Duplicate pantry entries successfully merged!');
+    }
+
+    function initCategorySelects() {
+      const pCat = document.getElementById('pantry-cat-input');
+      const editCat = document.getElementById('edit-pantry-cat');
+      const catHtml = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+      pCat.innerHTML = catHtml;
+      editCat.innerHTML = catHtml;
+    }
+
+    function switchTab(tabKey) {
+      ['recipes', 'planner', 'grocery', 'pantry'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-${t}`);
+        btn.classList.remove('border-terracotta', 'text-terracotta');
+        btn.classList.add('border-transparent', 'text-gray-500');
+      });
+
+      document.getElementById(`view-${tabKey}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-${tabKey}`);
+      activeBtn.classList.remove('border-transparent', 'text-gray-500');
+      activeBtn.classList.add('border-terracotta', 'text-terracotta');
+
+      if (tabKey === 'recipes') renderRecipes();
+      if (tabKey === 'planner') renderPlanner();
+      if (tabKey === 'pantry') renderPantry();
+      if (tabKey === 'grocery') generateGroceryList();
+    }
+
+    function autoCalculateCalories() {
+      let total = 0;
+      document.querySelectorAll('.ing-row').forEach(row => {
+        const name = row.querySelector('.ing-name').value.toLowerCase().trim();
+        const qty = parseFloat(row.querySelector('.ing-qty').value) || 0;
+        
+        let matchMultiplier = 1.0;
+        for (const [key, val] of Object.entries(CALORIE_DENSITY)) {
+          if (name.includes(key)) {
+            matchMultiplier = val;
+            break;
+          }
+        }
+        total += qty * matchMultiplier;
+      });
+
+      document.getElementById('form-recipe-calories').value = Math.round(total) || 500;
+    }
+
+    // RECIPES VIEW
+    function renderRecipes() {
+      const grid = document.getElementById('recipe-grid');
+      const search = document.getElementById('recipe-search').value.toLowerCase();
+      const sort = document.getElementById('recipe-sort').value;
+
+      const filterBox = document.getElementById('recipe-type-filters');
+      filterBox.innerHTML = dishTypes.map(t => `
+        <button onclick="setRecipeFilter('${t}')" class="text-[10px] font-semibold px-2.5 py-1 rounded-full border transition ${selectedTypeFilter === t ? 'bg-terracotta text-white border-terracotta' : 'bg-white text-gray-600 border-cream-300 hover:bg-cream-200'}">
+          ${t}
+        </button>
+      `).join('');
+
+      let filtered = recipes.filter(r => {
+        const matchesType = selectedTypeFilter === "ALL" || r.type === selectedTypeFilter;
+        const matchesSearch = r.name.toLowerCase().includes(search) || (r.ingredients && r.ingredients.some(i => i.name.toLowerCase().includes(search)));
+        return matchesType && matchesSearch;
+      });
+
+      filtered.sort((a, b) => {
+        if (sort === 'name-asc') return a.name.localeCompare(b.name);
+        if (sort === 'name-desc') return b.name.localeCompare(a.name);
+        if (sort === 'date-newest') return (b.createdAt || 0) - (a.createdAt || 0);
+        if (sort === 'date-oldest') return (a.createdAt || 0) - (b.createdAt || 0);
+      });
+
+      grid.innerHTML = '';
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-10 text-gray-400 text-xs">No matching recipes found.</div>`;
+        return;
+      }
+
+      filtered.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-xl border border-cream-200 p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3 cursor-pointer';
+        card.onclick = (e) => {
+          if (!e.target.closest('button')) openPreviewModal(r.id);
+        };
+
+        const ingTags = r.ingredients ? r.ingredients.map(i => `<span class="bg-cream-100 text-charcoal text-[10px] px-2 py-0.5 rounded-md">${i.qty} ${i.unit || ''} ${i.name}</span>`).join(' ') : '';
+        const servings = parseInt(r.servings) || 2; // Strict Servings Sync Fix
+        const calPerServing = r.calories ? Math.round(r.calories / servings) : null;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[10px] font-semibold text-terracotta bg-terracotta-light px-2.5 py-0.5 rounded-full">${r.type}</span>
+              ${isLoggedIn ? `
+                <div class="flex items-center space-x-1">
+                  <button onclick="duplicateRecipe('${r.id}')" title="Duplicate" class="text-xs text-gray-400 hover:text-charcoal p-1">📋</button>
+                  <button onclick="editRecipe('${r.id}')" title="Edit" class="text-xs text-gray-400 hover:text-charcoal p-1">✏️</button>
+                  <button onclick="deleteRecipe('${r.id}')" title="Delete" class="text-xs text-gray-400 hover:text-red-500 p-1">🗑️</button>
+                </div>
+              ` : ''}
+            </div>
+            <h3 class="font-serif font-bold text-base text-charcoal mb-1">${r.name}</h3>
+            <p class="text-[10px] text-gray-500 font-medium mb-2">👥 ${servings} Servings ${calPerServing ? `• 🔥 ${calPerServing} kcal / serving` : ''}</p>
+            <div class="flex flex-wrap gap-1">${ingTags}</div>
+          </div>
+          ${r.steps && r.steps.length ? `<p class="text-[11px] font-handwriting text-sage font-bold text-right">${r.steps.length} Cooking Steps 📝</p>` : ''}
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function setRecipeFilter(type) {
+      selectedTypeFilter = type;
+      renderRecipes();
+    }
+
+    function openRecipeModal(recipeToEdit = null) {
+      const modal = document.getElementById('recipe-modal');
+      const title = document.getElementById('modal-recipe-title');
+      const ingContainer = document.getElementById('ingredients-rows');
+      const stepsContainer = document.getElementById('steps-rows');
+      
+      ingContainer.innerHTML = '';
+      stepsContainer.innerHTML = '';
+
+      if (recipeToEdit) {
+        title.textContent = 'Edit Recipe';
+        document.getElementById('form-recipe-id').value = recipeToEdit.id;
+        document.getElementById('form-recipe-created').value = recipeToEdit.createdAt || Date.now();
+        document.getElementById('form-recipe-name').value = recipeToEdit.name;
+        document.getElementById('form-recipe-type').value = recipeToEdit.type || '🍗 Chicken';
+        document.getElementById('form-recipe-servings').value = parseInt(recipeToEdit.servings) || 2;
+        document.getElementById('form-recipe-calories').value = recipeToEdit.calories || '';
+        if (recipeToEdit.ingredients) recipeToEdit.ingredients.forEach(i => addIngredientRow(i.name, i.qty, i.unit, i.category));
+        if (recipeToEdit.steps) recipeToEdit.steps.forEach(s => addStepRow(s));
+      } else {
+        title.textContent = 'New Recipe';
+        document.getElementById('form-recipe-id').value = '';
+        document.getElementById('form-recipe-created').value = Date.now();
+        document.getElementById('form-recipe-name').value = '';
+        document.getElementById('form-recipe-type').value = '🍗 Chicken';
+        document.getElementById('form-recipe-servings').value = 2;
+        document.getElementById('form-recipe-calories').value = '';
+        addIngredientRow();
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeRecipeModal() {
+      document.getElementById('recipe-modal').classList.add('hidden');
+    }
+
+    function addIngredientRow(name = '', qty = '', unit = 'g', category = '🥬 Produce') {
+      const container = document.getElementById('ingredients-rows');
+      const div = document.createElement('div');
+      div.className = 'flex flex-col sm:flex-row sm:items-center gap-1.5 ing-row p-2 bg-white rounded-lg border border-cream-200 relative';
+      
+      const catOptions = categories.map(c => `<option value="${c}" ${c === category ? 'selected' : ''}>${c}</option>`).join('');
+      const unitOptions = validUnits.map(u => `<option value="${u}" ${u === unit ? 'selected' : ''}>${u}</option>`).join('');
+
+      div.innerHTML = `
+        <div class="flex-1 relative">
+          <input type="text" placeholder="Ingredient name" value="${name}" oninput="handleIngredientAutocomplete(this)" onblur="hideAutocompleteSuggestions(this)" class="ing-name w-full px-2 py-1 text-xs rounded-md border border-cream-300">
+          <div class="autocomplete-suggestions absolute left-0 right-0 top-full mt-1 bg-white border border-cream-300 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto hidden"></div>
+        </div>
+        <div class="flex items-center space-x-1.5">
+          <input type="number" placeholder="Qty" step="0.1" value="${qty}" class="ing-qty w-16 px-2 py-1 text-xs rounded-md border border-cream-300">
+          <select class="ing-unit w-20 px-1 py-1 text-xs rounded-md border border-cream-300 bg-white">${unitOptions}</select>
+          <select class="ing-cat flex-1 sm:w-28 px-1.5 py-1 text-[10px] rounded-md border border-cream-300 bg-white">${catOptions}</select>
+          <button onclick="this.closest('.ing-row').remove()" class="text-gray-400 hover:text-red-500 text-base px-1">&times;</button>
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
+    function handleIngredientAutocomplete(input) {
+      const query = input.value.trim().toLowerCase();
+      const suggestionsBox = input.parentElement.querySelector('.autocomplete-suggestions');
+      
+      if (!query) {
+        suggestionsBox.classList.add('hidden');
+        return;
+      }
+
+      const matches = pantry.filter(p => p.name.toLowerCase().includes(query) || makeKey(p.name).includes(makeKey(query)));
+      if (matches.length === 0) {
+        suggestionsBox.classList.add('hidden');
+        return;
+      }
+
+      suggestionsBox.innerHTML = matches.map(p => `
+        <div onmousedown="selectIngredientSuggestion(this, '${p.name.replace(/'/g, "\\'")}', '${p.unit}', '${p.category}')" class="px-3 py-1.5 hover:bg-cream-100 cursor-pointer text-xs flex justify-between items-center">
+          <span class="font-medium text-charcoal">${p.name}</span>
+          <span class="text-[10px] text-gray-400">${p.category} • ${p.unit}</span>
+        </div>
+      `).join('');
+
+      suggestionsBox.classList.remove('hidden');
+    }
+
+    function selectIngredientSuggestion(el, name, unit, category) {
+      const row = el.closest('.ing-row');
+      row.querySelector('.ing-name').value = name;
+      row.querySelector('.ing-unit').value = unit || 'g';
+      row.querySelector('.ing-cat').value = category || '🥬 Produce';
+      row.querySelector('.autocomplete-suggestions').classList.add('hidden');
+    }
+
+    function hideAutocompleteSuggestions(input) {
+      setTimeout(() => {
+        const box = input.parentElement.querySelector('.autocomplete-suggestions');
+        if (box) box.classList.add('hidden');
+      }, 200);
+    }
+
+    function addStepRow(text = '') {
+      const container = document.getElementById('steps-rows');
+      const div = document.createElement('div');
+      div.className = 'flex items-center space-x-1.5 step-row';
+      div.innerHTML = `
+        <span class="text-[10px] text-gray-400 font-bold step-num w-4">${container.children.length + 1}.</span>
+        <input type="text" placeholder="Instruction step..." value="${text}" class="step-text flex-1 px-2 py-1 text-xs rounded-md border border-cream-300">
+        <button onclick="moveStep(this, -1)" class="text-xs text-gray-400 hover:text-charcoal px-1">▲</button>
+        <button onclick="moveStep(this, 1)" class="text-xs text-gray-400 hover:text-charcoal px-1">▼</button>
+        <button onclick="this.parentElement.remove(); updateStepNumbers();" class="text-gray-400 hover:text-red-500 text-sm px-1">&times;</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function moveStep(btn, dir) {
+      const row = btn.parentElement;
+      if (dir === -1 && row.previousElementSibling) {
+        row.parentElement.insertBefore(row, row.previousElementSibling);
+      } else if (dir === 1 && row.nextElementSibling) {
+        row.parentElement.insertBefore(row.nextElementSibling, row);
+      }
+      updateStepNumbers();
+    }
+
+    function updateStepNumbers() {
+      document.querySelectorAll('#steps-rows .step-num').forEach((el, idx) => el.textContent = `${idx + 1}.`);
+    }
+
+    async function saveRecipe() {
+      if (!isLoggedIn) return;
+
+      const id = document.getElementById('form-recipe-id').value || `rec-${Date.now()}`;
+      const createdAt = Number(document.getElementById('form-recipe-created').value) || Date.now();
+      const name = document.getElementById('form-recipe-name').value.trim();
+      const type = document.getElementById('form-recipe-type').value;
+      const servings = parseInt(document.getElementById('form-recipe-servings').value) || 2;
+      const calories = parseInt(document.getElementById('form-recipe-calories').value) || 0;
+
+      if (!name) return alert('Recipe name is required.');
+
+      const ingredients = [];
+      document.querySelectorAll('.ing-row').forEach(row => {
+        const iName = row.querySelector('.ing-name').value.trim();
+        const iQty = parseFloat(row.querySelector('.ing-qty').value) || 0;
+        const iUnit = row.querySelector('.ing-unit').value;
+        const iCat = row.querySelector('.ing-cat').value;
+        if (iName) ingredients.push({ name: iName, qty: iQty, unit: iUnit, category: iCat });
+      });
+
+      const steps = [];
+      document.querySelectorAll('.step-row').forEach(row => {
+        const sText = row.querySelector('.step-text').value.trim();
+        if (sText) steps.push(sText);
+      });
+
+      const existingIndex = recipes.findIndex(r => r.id === id);
+      const recipeObj = { id, name, type, servings, calories, createdAt, modifiedAt: Date.now(), ingredients, steps };
+
+      if (existingIndex >= 0) recipes[existingIndex] = recipeObj;
+      else recipes.push(recipeObj);
+
+      syncPantryWithRecipes();
+      await saveRecipeToCloud(recipeObj);
+      saveState();
+      renderRecipes();
+      closeRecipeModal();
+    }
+
+    async function duplicateRecipe(id) {
+      if (!isLoggedIn) return;
+      const orig = recipes.find(r => r.id === id);
+      if (!orig) return;
+      const clone = JSON.parse(JSON.stringify(orig));
+      clone.id = `rec-${Date.now()}`;
+      clone.name = `Copy of ${orig.name}`;
+      clone.createdAt = Date.now();
+      clone.modifiedAt = Date.now();
+      recipes.push(clone);
+      syncPantryWithRecipes();
+      await saveRecipeToCloud(clone);
+      saveState();
+      renderRecipes();
+      openRecipeModal(clone);
+    }
+
+    function editRecipe(id) {
+      if (!isLoggedIn) return;
+      const r = recipes.find(x => x.id === id);
+      if (r) openRecipeModal(r);
+    }
+
+    async function deleteRecipe(id) {
+      if (!isLoggedIn) return;
+      if (confirm('Delete recipe from public cookbook?')) {
+        recipes = recipes.filter(r => r.id !== id);
+        syncPantryWithRecipes();
+        await deleteRecipeFromCloud(id);
+        saveState();
+        renderRecipes();
+      }
+    }
+
+    // PREVIEW MODAL
+    function openPreviewModal(id) {
+      const r = recipes.find(rec => rec.id === id);
+      if (!r) return;
+
+      const servings = parseInt(r.servings) || 2;
+      document.getElementById('preview-title').textContent = r.name;
+      document.getElementById('preview-type-badge').textContent = r.type;
+      document.getElementById('preview-servings').textContent = servings;
+      
+      const calPerServing = r.calories ? Math.round(r.calories / servings) : '-';
+      document.getElementById('preview-cal-per-serving').textContent = calPerServing !== '-' ? `${calPerServing} kcal` : 'N/A';
+
+      const ingList = document.getElementById('preview-ingredients-list');
+      ingList.innerHTML = r.ingredients ? r.ingredients.map(i => `
+        <li class="py-1.5 flex justify-between text-xs text-charcoal">
+          <span>${i.name}</span>
+          <span class="font-bold text-terracotta">${i.qty} ${i.unit || ''}</span>
+        </li>
+      `).join('') : '';
+
+      const stepsList = document.getElementById('preview-steps-list');
+      stepsList.innerHTML = r.steps && r.steps.length 
+        ? r.steps.map(s => `<li class="pl-1">${s}</li>`).join('')
+        : `<p class="text-gray-400 italic">No instructions added yet.</p>`;
+
+      document.getElementById('preview-start-cook-btn').onclick = () => {
+        closePreviewModal();
+        startCookMode(r.id);
+      };
+
+      const editBtn = document.getElementById('preview-edit-btn');
+      if (isLoggedIn) {
+        editBtn.classList.remove('hidden');
+        editBtn.onclick = () => {
+          closePreviewModal();
+          editRecipe(r.id);
+        };
+      } else {
+        editBtn.classList.add('hidden');
+      }
+
+      document.getElementById('preview-modal').classList.remove('hidden');
+    }
+
+    function closePreviewModal() {
+      document.getElementById('preview-modal').classList.add('hidden');
+    }
+
+    // COOK MODE & DYNAMIC STOCK DEDUCTION
+    async function startCookMode(recipeId) {
+      activeCookRecipe = recipes.find(r => r.id === recipeId);
+      if (!activeCookRecipe) return;
+
+      document.getElementById('cook-title').textContent = activeCookRecipe.name;
+      
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLockSentinel = await navigator.wakeLock.request('screen');
+          document.getElementById('cook-wake-lock-status').textContent = '💡 Screen Stay-Awake: Active';
+          document.getElementById('cook-wake-lock-status').className = 'text-[10px] text-sage font-bold';
+        } else {
+          document.getElementById('cook-wake-lock-status').textContent = '⚠️ Screen Stay-Awake not supported by browser';
+          document.getElementById('cook-wake-lock-status').className = 'text-[10px] text-gray-400 font-semibold';
+        }
+      } catch (err) {
+        document.getElementById('cook-wake-lock-status').textContent = '⚠️ Screen Stay-Awake inactive';
+        document.getElementById('cook-wake-lock-status').className = 'text-[10px] text-gray-400 font-semibold';
+      }
+
+      const ingList = document.getElementById('cook-ingredients-list');
+      ingList.innerHTML = activeCookRecipe.ingredients ? activeCookRecipe.ingredients.map((i, idx) => `
+        <label class="flex items-center space-x-3 cursor-pointer py-1.5 select-none">
+          <input type="checkbox" onchange="updateCookProgress()" class="cook-ing-cb w-4 h-4 accent-sage rounded">
+          <span class="cook-ing-label font-medium text-charcoal">${i.qty} ${i.unit || ''} ${i.name}</span>
+        </label>
+      `).join('') : '';
+
+      const stepsList = document.getElementById('cook-steps-list');
+      stepsList.innerHTML = activeCookRecipe.steps && activeCookRecipe.steps.length
+        ? activeCookRecipe.steps.map((s, idx) => `
+          <div onclick="toggleCookStep(this)" class="cook-step-card bg-white rounded-2xl p-4 border border-cream-200 shadow-sm cursor-pointer hover:border-terracotta transition select-none flex items-start space-x-3">
+            <input type="checkbox" onchange="updateCookProgress()" class="cook-step-cb w-5 h-5 mt-0.5 accent-terracotta rounded flex-shrink-0 cursor-pointer">
+            <div class="flex-1">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-terracotta block mb-0.5">Step ${idx + 1}</span>
+              <p class="cook-step-text text-sm font-semibold text-charcoal leading-relaxed">${s}</p>
+            </div>
+          </div>
+        `).join('')
+        : `<p class="text-xs text-gray-400 italic">No instructions available for this dish.</p>`;
+
+      updateCookProgress();
+      document.getElementById('cook-mode-modal').classList.remove('hidden');
+    }
+
+    function toggleCookStep(cardEl) {
+      const cb = cardEl.querySelector('.cook-step-cb');
+      cb.checked = !cb.checked;
+      updateCookProgress();
+    }
+
+    function updateCookProgress() {
+      const ingCbs = document.querySelectorAll('.cook-ing-cb');
+      const stepCards = document.querySelectorAll('.cook-step-card');
+      
+      let checkedIngs = 0;
+      ingCbs.forEach(cb => {
+        const label = cb.parentElement.querySelector('.cook-ing-label');
+        if (cb.checked) {
+          checkedIngs++;
+          label.classList.add('line-through', 'text-gray-400');
+        } else {
+          label.classList.remove('line-through', 'text-gray-400');
+        }
+      });
+      document.getElementById('cook-ing-badge').textContent = `${checkedIngs} / ${ingCbs.length} prepped`;
+
+      let checkedSteps = 0;
+      stepCards.forEach(card => {
+        const cb = card.querySelector('.cook-step-cb');
+        const text = card.querySelector('.cook-step-text');
+        if (cb.checked) {
+          checkedSteps++;
+          card.classList.add('bg-cream-100/60', 'opacity-60');
+          text.classList.add('line-through', 'text-gray-400');
+        } else {
+          card.classList.remove('bg-cream-100/60', 'opacity-60');
+          text.classList.remove('line-through', 'text-gray-400');
+        }
+      });
+
+      const totalSteps = stepCards.length || 1;
+      const progressPct = Math.round((checkedSteps / totalSteps) * 100);
+      document.getElementById('cook-progress-bar').style.width = `${progressPct}%`;
+    }
+
+    function resetCookProgress() {
+      document.querySelectorAll('.cook-ing-cb, .cook-step-cb').forEach(cb => cb.checked = false);
+      updateCookProgress();
+    }
+
+    function openDeductModal() {
+      if (!activeCookRecipe || !activeCookRecipe.ingredients) return;
+      const previewList = document.getElementById('deduct-preview-list');
+
+      previewList.innerHTML = activeCookRecipe.ingredients.map(ing => {
+        const norm = normalizeMeasurement(ing.qty, ing.unit, ing.name);
+        const matchKey = makeKey(ing.name);
+        const pItem = pantry.find(p => makeKey(p.name) === matchKey);
+        const currentQty = pItem ? pItem.qty : 0;
+        const newQty = Math.max(0, currentQty - norm.qty);
+
+        return `
+          <div class="p-2 bg-cream-100 rounded-lg flex items-center justify-between border border-cream-200">
+            <div>
+              <p class="font-bold text-charcoal">${ing.name}</p>
+              <p class="text-[10px] text-gray-500">Current Stock: ${currentQty} ${norm.unit}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-terracotta">-${norm.qty} ${norm.unit}</p>
+              <p class="text-[10px] text-sage font-bold">New: ${newQty} ${norm.unit}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('deduct-modal').classList.remove('hidden');
+    }
+
+    function closeDeductModal() {
+      document.getElementById('deduct-modal').classList.add('hidden');
+    }
+
+    function confirmAndDeductStock() {
+      if (!activeCookRecipe || !activeCookRecipe.ingredients) return;
+
+      previousPantrySnapshot = JSON.parse(JSON.stringify(pantry));
+
+      activeCookRecipe.ingredients.forEach(ing => {
+        const norm = normalizeMeasurement(ing.qty, ing.unit, ing.name);
+        const matchKey = makeKey(ing.name);
+        const pItem = pantry.find(p => makeKey(p.name) === matchKey);
+
+        if (pItem) {
+          pItem.qty = Math.max(0, pItem.qty - norm.qty);
+          pItem.modifiedAt = Date.now();
+        }
+      });
+
+      saveState();
+      renderPantry();
+      closeDeductModal();
+      exitCookMode();
+
+      const banner = document.getElementById('undo-restock-banner');
+      banner.classList.remove('hidden');
+      setTimeout(() => banner.classList.add('hidden'), 10000);
+    }
+
+    function undoLastStockDeduction() {
+      if (previousPantrySnapshot) {
+        pantry = JSON.parse(JSON.stringify(previousPantrySnapshot));
+        previousPantrySnapshot = null;
+        saveState();
+        renderPantry();
+        document.getElementById('undo-restock-banner').classList.add('hidden');
+        alert("Pantry stock restored successfully!");
+      }
+    }
+
+    async function exitCookMode() {
+      if (wakeLockSentinel) {
+        try {
+          await wakeLockSentinel.release();
+          wakeLockSentinel = null;
+        } catch (e) {}
+      }
+      document.getElementById('cook-mode-modal').classList.add('hidden');
+    }
+
+    // MEAL PLANNER
+    function getMealPlanListForDate(dateKey) {
+      const raw = mealPlans[dateKey];
+      if (!raw) return [];
+      if (Array.isArray(raw)) return raw;
+      return [raw];
+    }
+
+    function setPlannerView(mode) {
+      plannerMode = mode;
+      plannerOffset = 0;
+      document.getElementById('view-btn-week').className = mode === 'week' ? 'px-3 py-1.5 rounded-md bg-white shadow-sm text-charcoal' : 'px-3 py-1.5 rounded-md text-gray-500 hover:text-charcoal';
+      document.getElementById('view-btn-month').className = mode === 'month' ? 'px-3 py-1.5 rounded-md bg-white shadow-sm text-charcoal' : 'px-3 py-1.5 rounded-md text-gray-500 hover:text-charcoal';
+      renderPlanner();
+    }
+
+    function navigatePlanner(dir) {
+      plannerOffset += dir;
+      renderPlanner();
+    }
+
+    function renderPlanner() {
+      const grid = document.getElementById('planner-calendar-grid');
+      grid.innerHTML = '';
+      const now = new Date();
+
+      if (plannerMode === 'week') {
+        grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2';
+        const start = new Date(now);
+        start.setDate(now.getDate() - now.getDay() + (plannerOffset * 7));
+
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(start);
+          d.setDate(start.getDate() + i);
+          days.push(d);
+        }
+
+        const startStr = days[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const endStr = days[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        document.getElementById('planner-period-label').textContent = `${startStr} - ${endStr}`;
+
+        document.getElementById('grocery-start-date').value = days[0].toISOString().split('T')[0];
+        document.getElementById('grocery-end-date').value = days[6].toISOString().split('T')[0];
+
+        days.forEach(day => {
+          const key = day.toISOString().split('T')[0];
+          const recIds = getMealPlanListForDate(key);
+          const assignedRecipes = recIds.map(id => recipes.find(r => r.id === id)).filter(Boolean);
+          const isToday = new Date().toISOString().split('T')[0] === key;
+
+          const card = document.createElement('div');
+          card.className = `bg-white rounded-xl border border-cream-200 p-3 min-h-[130px] flex flex-col justify-between ${isToday ? 'ring-1 ring-terracotta' : ''}`;
+          
+          let dishListHtml = assignedRecipes.map(rec => `
+            <div onclick="openAssignModal('${key}')" class="p-1.5 mb-1 bg-cream-50 border border-cream-200 rounded-lg cursor-pointer hover:border-terracotta flex items-center justify-between">
+              <div class="truncate">
+                <span class="text-[9px] text-terracotta font-semibold block leading-none">${rec.type}</span>
+                <p class="text-xs font-bold text-charcoal truncate">${rec.name}</p>
+              </div>
+            </div>
+          `).join('');
+
+          card.innerHTML = `
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold ${isToday ? 'text-terracotta' : 'text-gray-500'}">${day.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                <span class="text-[10px] text-gray-400">${day.getDate()}</span>
+              </div>
+              <div class="space-y-1">${dishListHtml}</div>
+            </div>
+            <button onclick="openAssignModal('${key}')" class="w-full py-1.5 mt-2 border border-dashed border-cream-300 rounded-lg text-xs text-gray-500 hover:text-charcoal hover:bg-cream-100 font-medium">+ Add Dish</button>
+          `;
+          grid.appendChild(card);
+        });
+
+      } else {
+        grid.className = 'grid grid-cols-7 gap-1.5';
+        const targetMonth = new Date(now.getFullYear(), now.getMonth() + plannerOffset, 1);
+        document.getElementById('planner-period-label').textContent = targetMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+        const firstDayIdx = targetMonth.getDay();
+        const daysInMonth = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0).getDate();
+
+        ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(h => {
+          grid.appendChild(Object.assign(document.createElement('div'), {
+            className: 'text-center text-[10px] font-bold text-gray-400 py-1',
+            textContent: h
+          }));
+        });
+
+        for (let i = 0; i < firstDayIdx; i++) {
+          grid.appendChild(Object.assign(document.createElement('div'), { className: 'bg-cream-100/50 rounded-lg min-h-[70px]' }));
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateObj = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), d);
+          const key = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+          const recIds = getMealPlanListForDate(key);
+          const assignedRecipes = recIds.map(id => recipes.find(r => r.id === id)).filter(Boolean);
+
+          const card = document.createElement('div');
+          card.className = 'bg-white rounded-lg border border-cream-200 p-1.5 min-h-[70px] flex flex-col justify-between cursor-pointer hover:border-terracotta';
+          card.onclick = () => openAssignModal(key);
+          card.innerHTML = `
+            <span class="text-[10px] font-bold text-gray-400">${d}</span>
+            <div class="space-y-0.5 overflow-hidden">
+              ${assignedRecipes.map(rec => `<div class="bg-cream-100 p-0.5 rounded text-[9px] truncate font-semibold text-charcoal">${rec.type.split(' ')[0]} ${rec.name}</div>`).join('')}
+            </div>
+          `;
+          grid.appendChild(card);
+        }
+      }
+    }
+
+    function openAssignModal(dateKey) {
+      selectedDateForAssign = dateKey;
+      assignTypeFilter = "ALL";
+      document.getElementById('assign-modal-date').textContent = `Meals for ${dateKey}`;
+      document.getElementById('assign-search').value = '';
+
+      renderCurrentAssignedList();
+      renderAssignRecipeList();
+      document.getElementById('assign-modal').classList.remove('hidden');
+    }
+
+    function renderCurrentAssignedList() {
+      const container = document.getElementById('current-assigned-list');
+      const recIds = getMealPlanListForDate(selectedDateForAssign);
+      const assignedRecipes = recIds.map(id => recipes.find(r => r.id === id)).filter(Boolean);
+
+      if (assignedRecipes.length === 0) {
+        container.innerHTML = `<p class="text-xs text-gray-400 italic py-1">No dishes scheduled for this date.</p>`;
+        return;
+      }
+
+      container.innerHTML = assignedRecipes.map(rec => `
+        <div class="p-2 bg-cream-100 rounded-lg border border-cream-200 flex items-center justify-between">
+          <div>
+            <span class="text-[9px] font-semibold text-terracotta block">${rec.type}</span>
+            <p class="font-bold text-xs text-charcoal">${rec.name}</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="closeAssignModal(); openPreviewModal('${rec.id}');" class="text-[10px] bg-terracotta text-white px-2 py-0.5 rounded hover:bg-terracotta-hover">View</button>
+            <button onclick="removeRecipeFromDate('${rec.id}')" class="text-gray-400 hover:text-red-500 text-sm font-bold px-1">&times;</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderAssignRecipeList() {
+      const search = document.getElementById('assign-search').value.toLowerCase();
+      const list = document.getElementById('assign-recipe-list');
+      const filterBox = document.getElementById('assign-type-filters');
+
+      filterBox.innerHTML = dishTypes.map(t => `
+        <button onclick="assignTypeFilter='${t}'; renderAssignRecipeList();" class="text-[9px] font-semibold px-2 py-0.5 rounded-full border transition ${assignTypeFilter === t ? 'bg-terracotta text-white border-terracotta' : 'bg-white text-gray-600 border-cream-300'}">
+          ${t}
+        </button>
+      `).join('');
+
+      let filtered = recipes.filter(r => {
+        const matchesType = assignTypeFilter === "ALL" || r.type === assignTypeFilter;
+        const matchesSearch = r.name.toLowerCase().includes(search);
+        return matchesType && matchesSearch;
+      });
+
+      list.innerHTML = '';
+      if (filtered.length === 0) {
+        list.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">No matching recipes found.</p>`;
+      } else {
+        filtered.forEach(r => {
+          const btn = document.createElement('button');
+          btn.className = 'w-full text-left p-2 rounded-lg border border-cream-200 hover:border-terracotta hover:bg-cream-100 flex items-center justify-between text-xs transition';
+          btn.onclick = () => addRecipeToDate(r.id);
+          btn.innerHTML = `<span class="font-bold text-charcoal">+ ${r.name}</span><span class="text-gray-400 text-[10px]">${r.type}</span>`;
+          list.appendChild(btn);
+        });
+      }
+    }
+
+    function closeAssignModal() {
+      document.getElementById('assign-modal').classList.add('hidden');
+    }
+
+    function addRecipeToDate(recipeId) {
+      if (!selectedDateForAssign) return;
+      const list = getMealPlanListForDate(selectedDateForAssign);
+      if (!list.includes(recipeId)) {
+        list.push(recipeId);
+        mealPlans[selectedDateForAssign] = list;
+        saveState();
+        renderPlanner();
+        renderCurrentAssignedList();
+      }
+    }
+
+    function removeRecipeFromDate(recipeId) {
+      if (!selectedDateForAssign) return;
+      let list = getMealPlanListForDate(selectedDateForAssign);
+      list = list.filter(id => id !== recipeId);
+
+      if (list.length === 0) delete mealPlans[selectedDateForAssign];
+      else mealPlans[selectedDateForAssign] = list;
+
+      saveState();
+      renderPlanner();
+      renderCurrentAssignedList();
+    }
+
+    function clearDayRecipes() {
+      if (selectedDateForAssign) {
+        delete mealPlans[selectedDateForAssign];
+        saveState();
+        renderPlanner();
+        closeAssignModal();
+      }
+    }
+
+    // GROCERY LIST
+    function generateGroceryList() {
+      const startStr = document.getElementById('grocery-start-date').value;
+      const endStr = document.getElementById('grocery-end-date').value;
+
+      if (!startStr || !endStr) return;
+
+      const startDate = new Date(startStr);
+      const endDate = new Date(endStr);
+      const aggregated = {};
+
+      Object.keys(mealPlans).forEach(dateKey => {
+        const d = new Date(dateKey);
+        if (d >= startDate && d <= endDate) {
+          const recIds = getMealPlanListForDate(dateKey);
+          recIds.forEach(recId => {
+            const rec = recipes.find(r => r.id === recId);
+            if (rec && rec.ingredients) {
+              rec.ingredients.forEach(ing => {
+                const normalized = normalizeMeasurement(ing.qty, ing.unit, ing.name);
+                const itemKey = makeKey(ing.name);
+                const key = `${itemKey}_${normalized.unit}`;
+
+                if (!aggregated[key]) {
+                  aggregated[key] = {
+                    key: key,
+                    rawName: ing.name.trim(),
+                    name: ing.name.trim(),
+                    qty: 0,
+                    unit: normalized.unit,
+                    category: ing.category || '🧂 Pantry Staples',
+                    usage: []
+                  };
+                }
+                aggregated[key].qty += normalized.qty;
+                aggregated[key].usage.push({
+                  recipeId: rec.id,
+                  recipeName: rec.name,
+                  date: dateKey,
+                  rawQty: ing.qty,
+                  rawUnit: ing.unit
+                });
+              });
+            }
+          });
+        }
+      });
+
+      pantry.forEach(p => {
+        if ((p.category === "🧼 Household" || p.category === "📦 Other") && p.qty === 0) {
+          const key = `${makeKey(p.name)}_${p.unit || 'pcs'}`;
+          if (!aggregated[key]) {
+            aggregated[key] = {
+              key: key,
+              rawName: p.name.trim(),
+              name: p.name.trim(),
+              qty: 1,
+              unit: p.unit || 'pcs',
+              category: p.category,
+              usage: [{ recipeId: null, recipeName: "Pantry Auto-Restock Alert", date: "Out of Stock", rawQty: 1, rawUnit: p.unit || 'pcs' }]
+            };
+          }
+        }
+      });
+
+      currentGroceryUsageMap = aggregated;
+      const container = document.getElementById('grocery-categories-container');
+      container.innerHTML = '';
+
+      const items = Object.values(aggregated);
+      document.getElementById('grocery-count-badge').textContent = `${items.length} unique items`;
+
+      if (items.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-400 text-xs py-6">No recipes scheduled within this date range.</p>`;
+        return;
+      }
+
+      const grouped = {};
+      items.forEach(item => {
+        if (!grouped[item.category]) grouped[item.category] = [];
+        grouped[item.category].push(item);
+      });
+
+      categories.forEach(cat => {
+        if (!grouped[cat]) return;
+
+        grouped[cat].sort((a, b) => a.name.localeCompare(b.name));
+
+        const catBox = document.createElement('details');
+        catBox.open = true;
+        catBox.className = 'bg-cream-50 rounded-xl border border-cream-200 overflow-hidden';
+        
+        const listHtml = grouped[cat].map(item => {
+          const itemKeyStr = makeKey(item.name);
+          const pantryMatch = pantry.find(p => makeKey(p.name) === itemKeyStr && (p.unit || '').toLowerCase().trim() === item.unit.toLowerCase());
+          const inPantry = pantryMatch ? Number(pantryMatch.qty) : 0;
+          const toBuy = Math.max(0, item.qty - inPantry);
+          const isCovered = inPantry >= item.qty;
+
+          return `
+            <div class="py-2.5 px-4 flex items-center justify-between hover:bg-cream-100 transition border-b border-cream-100 last:border-none text-xs">
+              <div class="flex items-center space-x-2">
+                <input type="checkbox" ${isCovered ? 'checked' : ''} onchange="toggleGroceryCheck(this)" class="w-4 h-4 accent-terracotta rounded cursor-pointer">
+                <span onclick="inspectIngredient('${item.key}')" class="item-label font-medium cursor-pointer hover:underline ${isCovered ? 'line-through text-gray-400' : 'text-charcoal'}">
+                  ${item.name} 🔍
+                </span>
+              </div>
+              <div class="text-right">
+                <span class="font-bold text-terracotta">${toBuy} ${item.unit || ''}</span>
+                ${inPantry > 0 ? `<p class="text-[10px] text-sage font-semibold">Pantry: ${inPantry} / ${item.qty} needed</p>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        catBox.innerHTML = `
+          <summary class="px-4 py-2 bg-cream-100 font-bold text-xs text-charcoal cursor-pointer flex justify-between items-center select-none">
+            <span>${cat}</span>
+            <span class="text-[10px] text-gray-400 font-normal">${grouped[cat].length} items</span>
+          </summary>
+          <div class="divide-y divide-cream-100">${listHtml}</div>
+        `;
+        container.appendChild(catBox);
+      });
+    }
+
+    function toggleGroceryCheck(cb) {
+      const label = cb.parentElement.querySelector('.item-label');
+      if (cb.checked) {
+        label.classList.add('line-through', 'text-gray-400');
+        label.classList.remove('text-charcoal');
+      } else {
+        label.classList.remove('line-through', 'text-gray-400');
+        label.classList.add('text-charcoal');
+      }
+    }
+
+    function inspectIngredient(key) {
+      const item = currentGroceryUsageMap[key];
+      if (!item) return;
+
+      document.getElementById('inspector-title').textContent = item.name;
+      currentInspectedIngredient = item.name;
+
+      const body = document.getElementById('inspector-body');
+      
+      const usageHtml = item.usage.map(u => `
+        <div class="p-2.5 bg-cream-100 rounded-lg border border-cream-200 flex items-center justify-between">
+          <div>
+            <p class="font-bold text-charcoal text-xs">${u.recipeName}</p>
+            <p class="text-[10px] text-gray-500">${u.date} • <span class="font-semibold text-terracotta">${u.rawQty} ${u.rawUnit}</span></p>
+          </div>
+          ${u.recipeId ? `<button onclick="closeInspectorModal(); openPreviewModal('${u.recipeId}');" class="px-2.5 py-1 text-[10px] bg-terracotta hover:bg-terracotta-hover text-white rounded font-medium">📖 View Recipe</button>` : ''}
+        </div>
+      `).join('');
+
+      body.innerHTML = `
+        <p class="text-xs font-semibold text-terracotta">Total Aggregated Need: ${item.qty} ${item.unit || ''}</p>
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-2">Required by scheduled recipes:</p>
+        <div class="space-y-1.5">${usageHtml}</div>
+      `;
+
+      document.getElementById('inspector-modal').classList.remove('hidden');
+    }
+
+    // PANTRY SECTION
+    function renderPantry() {
+      const container = document.getElementById('pantry-container');
+      const jumpContainer = document.getElementById('pantry-jump-pills');
+      container.innerHTML = '';
+      jumpContainer.innerHTML = '';
+
+      if (pantry.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-400 text-xs py-6">No pantry stock items recorded.</p>`;
+        return;
+      }
+
+      const grouped = {};
+      pantry.forEach(item => {
+        const cat = item.category || '🧂 Pantry Staples';
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(item);
+      });
+
+      categories.forEach(cat => {
+        if (!grouped[cat]) return;
+
+        grouped[cat].sort((a, b) => a.name.localeCompare(b.name));
+
+        const catId = `pantry-cat-${cat.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+        const pill = document.createElement('a');
+        pill.href = `#${catId}`;
+        pill.className = 'text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white text-gray-600 border border-cream-300 hover:bg-cream-200 hover:border-terracotta transition whitespace-nowrap';
+        pill.textContent = `${cat} (${grouped[cat].length})`;
+        jumpContainer.appendChild(pill);
+
+        const box = document.createElement('details');
+        box.id = catId;
+        box.open = true;
+        box.className = 'bg-white rounded-xl border border-cream-200 overflow-hidden';
+
+        const rows = grouped[cat].map(item => `
+          <div class="py-2.5 px-4 flex items-center justify-between text-xs border-b border-cream-100 last:border-none gap-3 hover:bg-cream-50 transition">
+            <div onclick="openPantryEditModal('${item.id}')" class="flex-1 min-w-0 cursor-pointer">
+              <p class="font-medium text-charcoal text-xs truncate ${item.qty === 0 ? 'text-gray-400 italic' : ''}">
+                ${item.name} ${item.qty === 0 ? '(Out of Stock)' : ''}
+              </p>
+            </div>
+            
+            <div class="flex items-center space-x-2 flex-shrink-0">
+              <input type="number" step="0.1" value="${item.qty}" onchange="updatePantryQty('${item.id}', this.value)" class="w-16 px-1.5 py-0.5 text-xs border border-cream-300 rounded text-center bg-white font-bold text-charcoal">
+              <span class="text-xs font-semibold text-sage bg-sage-light px-2 py-0.5 rounded min-w-[36px] text-center">${item.unit || 'pcs'}</span>
+              <button onclick="deletePantryItem('${item.id}')" title="Delete" class="text-gray-400 hover:text-red-500 text-sm p-1">&times;</button>
+            </div>
+          </div>
+        `).join('');
+
+        box.innerHTML = `
+          <summary class="px-4 py-2.5 bg-cream-100 font-bold text-xs text-charcoal cursor-pointer flex justify-between items-center select-none border-b border-cream-200">
+            <span>${cat}</span>
+            <span class="text-[10px] text-gray-400 font-normal">${grouped[cat].length} items</span>
+          </summary>
+          <div class="divide-y divide-cream-100">${rows}</div>
+        `;
+        container.appendChild(box);
+      });
+    }
+
+    function openPantryEditModal(id) {
+      const item = pantry.find(p => p.id === id);
+      if (!item) return;
+
+      document.getElementById('edit-pantry-id').value = item.id;
+      document.getElementById('edit-pantry-name').value = item.name;
+      document.getElementById('edit-pantry-qty').value = item.qty;
+      document.getElementById('edit-pantry-unit').value = item.unit || 'pcs';
+      document.getElementById('edit-pantry-cat').value = item.category || '🧂 Pantry Staples';
+
+      document.getElementById('pantry-edit-modal').classList.remove('hidden');
+    }
+
+    function closePantryEditModal() {
+      document.getElementById('pantry-edit-modal').classList.add('hidden');
+    }
+
+    function savePantryItemEdit() {
+      const id = document.getElementById('edit-pantry-id').value;
+      const item = pantry.find(p => p.id === id);
+      if (!item) return;
+
+      const newName = document.getElementById('edit-pantry-name').value.trim();
+      const newQty = parseFloat(document.getElementById('edit-pantry-qty').value) || 0;
+      const newUnit = document.getElementById('edit-pantry-unit').value;
+      const newCat = document.getElementById('edit-pantry-cat').value;
+
+      if (!newName) return alert('Ingredient name cannot be empty.');
+
+      item.name = newName;
+      item.qty = Math.max(0, newQty);
+      item.unit = newUnit;
+      item.category = newCat;
+      item.modifiedAt = Date.now();
+
+      syncPantryWithRecipes();
+      renderPantry();
+      closePantryEditModal();
+    }
+
+    function addCustomPantryItem() {
+      const name = document.getElementById('pantry-name-input').value.trim();
+      const qty = parseFloat(document.getElementById('pantry-qty-input').value) || 0;
+      const unit = document.getElementById('pantry-unit-input').value;
+      const category = document.getElementById('pantry-cat-input').value;
+
+      if (!name) return;
+
+      const normalized = normalizeMeasurement(qty, unit, name);
+
+      pantry.push({ id: `pan-${Date.now()}`, name, qty: normalized.qty, unit: normalized.unit, category, modifiedAt: Date.now() });
+      syncPantryWithRecipes();
+      renderPantry();
+
+      document.getElementById('pantry-name-input').value = '';
+      document.getElementById('pantry-qty-input').value = '';
+    }
+
+    function updatePantryQty(id, newQty) {
+      const item = pantry.find(p => p.id === id);
+      if (item) {
+        item.qty = Math.max(0, parseFloat(newQty) || 0);
+        item.modifiedAt = Date.now();
+        saveState();
+        renderPantry();
+      }
+    }
+
+    // Advanced Force-Delete Logic for Duplicate Pantry Items (e.g. Olive Oil ml vs g)
+    function deletePantryItem(id) {
+      const item = pantry.find(p => p.id === id);
+      if (!item) return;
+
+      const targetKey = makeKey(item.name);
+      const usingRecipes = recipes.filter(r => 
+        r.ingredients && r.ingredients.some(i => makeKey(i.name) === targetKey)
+      );
+
+      if (usingRecipes.length > 0) {
+        const recipeListStr = usingRecipes.map(r => `• ${r.name}`).join('\n');
+        const confirmForce = confirm(`"${item.name}" is listed in these recipes:\n\n${recipeListStr}\n\nDo you want to Force Delete this pantry entry anyway?\n(Your recipes will stay safe!)`);
+        
+        if (confirmForce) {
+          pantry = pantry.filter(p => p.id !== id);
+          saveState();
+          renderPantry();
+        }
+        return;
+      }
+
+      if (confirm(`Remove "${item.name}" from your pantry inventory?`)) {
+        pantry = pantry.filter(p => p.id !== id);
+        saveState();
+        renderPantry();
+      }
+    }
+
+    function openPantryIngredientInspector(ingName) {
+      closePantryEditModal();
+      currentInspectedIngredient = ingName;
+      inspectorTypeFilter = "ALL";
+      document.getElementById('inspector-title').textContent = ingName;
+      document.getElementById('inspector-search').value = '';
+
+      filterInspectorRecipes();
+      document.getElementById('inspector-modal').classList.remove('hidden');
+    }
+
+    function filterInspectorRecipes() {
+      const search = document.getElementById('inspector-search').value.toLowerCase();
+      const filterBox = document.getElementById('inspector-type-filters');
+      const body = document.getElementById('inspector-body');
+
+      filterBox.innerHTML = dishTypes.map(t => `
+        <button onclick="inspectorTypeFilter='${t}'; filterInspectorRecipes();" class="text-[9px] font-semibold px-2 py-0.5 rounded-full border transition ${inspectorTypeFilter === t ? 'bg-terracotta text-white border-terracotta' : 'bg-white text-gray-600 border-cream-300'}">
+          ${t}
+        </button>
+      `).join('');
+
+      const targetKey = makeKey(currentInspectedIngredient);
+      const matchingRecipes = recipes.filter(r => {
+        const usesIng = r.ingredients && r.ingredients.some(i => makeKey(i.name) === targetKey);
+        const matchesType = inspectorTypeFilter === "ALL" || r.type === inspectorTypeFilter;
+        const matchesSearch = r.name.toLowerCase().includes(search);
+        return usesIng && matchesType && matchesSearch;
+      });
+
+      if (matchingRecipes.length === 0) {
+        body.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">No matching recipes use this ingredient.</p>`;
+      } else {
+        body.innerHTML = matchingRecipes.map(r => `
+          <div class="p-2.5 bg-cream-100 rounded-lg border border-cream-200 flex items-center justify-between">
+            <div>
+              <p class="font-bold text-charcoal text-xs">${r.name}</p>
+              <span class="text-[10px] text-terracotta font-semibold">${r.type}</span>
+            </div>
+            <button onclick="closeInspectorModal(); openPreviewModal('${r.id}');" class="text-[10px] bg-terracotta text-white px-2 py-1 rounded font-medium hover:bg-terracotta-hover">View</button>
+          </div>
+        `).join('');
+      }
+    }
+
+    function closeInspectorModal() {
+      document.getElementById('inspector-modal').classList.add('hidden');
+    }
+
+    // EXPORT & IMPORT
+    function exportData() {
+      const payload = JSON.stringify({ recipes, pantry, mealPlans }, null, 2);
+      const blob = new Blob([payload], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kusina_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async e => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed.recipes) recipes = parsed.recipes;
+          if (parsed.pantry) pantry = parsed.pantry;
+          if (parsed.mealPlans) mealPlans = parsed.mealPlans;
+          syncPantryWithRecipes();
+          saveState();
+          renderRecipes();
+          alert('Kusina backup imported successfully!');
+        } catch (err) {
+          alert('Invalid JSON file format.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // INIT
+    initCategorySelects();
+    updateSyncUI();
+    syncPantryWithRecipes();
+    fetchPublicMasterRecipes();
+  </script>
+</body>
+</html>
