@@ -57,8 +57,8 @@
 </head>
 <body class="font-sans min-h-screen flex flex-col antialiased selection:bg-terracotta selection:text-white">
 
-  <!-- Floating Centered Undo Banner -->
-  <div id="undo-restock-banner" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-charcoal text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3 hidden animate-bounce max-w-sm w-11/12">
+  <!-- Floating Reverted Undo Banner (Original Bottom-Right Position) -->
+  <div id="undo-restock-banner" class="fixed bottom-5 right-5 z-50 bg-charcoal text-white p-4 rounded-2xl shadow-2xl flex items-center space-x-3 hidden animate-bounce max-w-xs sm:max-w-sm">
     <span class="text-xl">⚠️</span>
     <div class="text-xs flex-1">
       <p class="font-bold" id="undo-banner-title">Pantry Stock Updated!</p>
@@ -84,9 +84,6 @@
       <div class="flex items-center space-x-1.5 flex-shrink-0">
         <button id="sync-status-btn" onclick="handleAuthButtonClick()" class="p-2 sm:px-3 sm:py-1.5 text-xs font-semibold rounded-lg border transition flex items-center space-x-1" title="Admin Login / Logout">
           <span id="sync-icon">🔒</span> <span id="sync-label" class="hidden sm:inline">Admin Login</span>
-        </button>
-        <button onclick="openSyncTroubleshooter()" class="p-2 sm:px-3 sm:py-1.5 text-xs font-medium text-charcoal bg-cream-50 hover:bg-cream-200 border border-cream-300 rounded-lg transition flex items-center space-x-1" title="Cloud Sync Diagnostic">
-          <span>☁️</span> <span class="hidden sm:inline">Sync</span>
         </button>
         <button onclick="exportData()" class="p-2 sm:px-3 sm:py-1.5 text-xs font-medium text-charcoal bg-cream-50 hover:bg-cream-200 border border-cream-300 rounded-lg transition flex items-center space-x-1" title="Export Local Backup">
           <span>📥</span> <span class="hidden sm:inline">Backup</span>
@@ -191,7 +188,7 @@
         </div>
       </div>
 
-      <!-- Active Shop Session Banner (Positioned Below Date Box) -->
+      <!-- Active Shop Session Banner -->
       <div id="active-shop-banner" class="bg-sage-light border border-sage text-charcoal p-3.5 rounded-xl flex items-center justify-between hidden shadow-sm flex-wrap gap-2">
         <div class="flex items-center space-x-2">
           <span class="text-xl">🛒</span>
@@ -212,9 +209,11 @@
 
       <div class="bg-white p-5 rounded-xl border border-cream-200 shadow-sm space-y-4">
         <div class="flex items-center justify-between border-b border-cream-200 pb-3 flex-wrap gap-2">
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center space-x-2 flex-wrap">
             <h3 class="font-serif font-bold text-lg text-charcoal">Categorized Shopping List</h3>
             <span id="grocery-count-badge" class="text-xs bg-cream-200 text-charcoal px-2.5 py-0.5 rounded-full font-semibold">0 items</span>
+            <!-- NEW ESTIMATED TOTAL PRICE BADGE -->
+            <span id="grocery-estimated-price-badge" class="text-xs bg-terracotta-light text-terracotta ring-1 ring-terracotta px-2.5 py-0.5 rounded-full font-bold">Est. Total: ₱0.00</span>
           </div>
           <button onclick="startShopMode()" class="bg-sage hover:opacity-90 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm flex items-center space-x-1.5 transition">
             <span>🛍️</span> <span>Start Shop Mode</span>
@@ -283,7 +282,7 @@
   <!-- Footer -->
   <footer class="mt-auto py-6 border-t border-cream-200 bg-cream-100 text-left px-6 text-xs text-gray-500 font-medium">
     <div>Prompt Coded by ✈️.</div>
-    <div>September 2026. <span onclick="openChangelogModal()" class="text-terracotta font-bold hover:underline cursor-pointer">v23</span></div>
+    <div>September 2026. <span onclick="openChangelogModal()" class="text-terracotta font-bold hover:underline cursor-pointer">v24</span></div>
   </footer>
 
   <!-- MODAL: CHANGELOG -->
@@ -296,63 +295,23 @@
       
       <div class="p-5 overflow-y-auto space-y-4 custom-scroll text-xs flex-1">
         <div class="border-l-2 border-terracotta pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v23 — Self-Contained Undo Button, Pantry Insights & Sync Diagnostic</span>
-          <p class="text-gray-600">Replaced 0-stock popup with inline undo button timer, added recipe/price drawers to Pantry & Shop Log tabs, bottom-sorted strikethrough items in Grocery List, auto-refreshed grocery list on pantry edits, centered undo banners, and introduced a Cloud Sync diagnostic tool.</p>
+          <span class="font-bold text-charcoal">v24 — Full Cloud-First Engine & Estimated Grocery Total</span>
+          <p class="text-gray-600">Transitioned to a pure Cloud-First architecture with real-time Firebase WebSockets, eliminated local cache overwrites, added Est. Total Price to the Grocery List, and restored the original bottom-right position for the Undo popup.</p>
         </div>
 
         <div class="border-l-2 border-cream-300 pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v22 — Price Tracker, Top-Aligned Planner & Centered Banner</span>
-          <p class="text-gray-600">Added actual item price logging in Shop Log, top-aligned the meal assign modal for mobile keyboards, added dish re-ordering controls, and centered the undo banner.</p>
+          <span class="font-bold text-charcoal">v23 — Self-Contained Undo Button & Pantry Insights</span>
+          <p class="text-gray-600">Replaced 0-stock popup with inline undo button timer, added recipe/price drawers to Pantry & Shop Log tabs, and bottom-sorted strikethrough items in Grocery List.</p>
         </div>
 
         <div class="border-l-2 border-cream-300 pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v1-v21 — Core Architecture & Feature Expansions</span>
+          <span class="font-bold text-charcoal">v1-v22 — Core Architecture & Feature Expansions</span>
           <p class="text-gray-600">Initial releases featuring Recipe Manager, Pantry Inventory, Calorie Calculator, Dynamic Autocomplete, Grocery Aggregation, and Focus Cook View.</p>
         </div>
       </div>
 
       <div class="p-3 bg-cream-100 border-t border-cream-200 text-right">
         <button onclick="closeChangelogModal()" class="px-4 py-1.5 bg-cream-200 text-charcoal text-xs font-semibold rounded-lg">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: CLOUD SYNC TROUBLESHOOTER -->
-  <div id="sync-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-cream-50 rounded-2xl max-w-md w-full p-5 shadow-xl border border-cream-200 space-y-4">
-      <div class="flex items-center justify-between border-b border-cream-200 pb-2">
-        <h3 class="font-serif font-bold text-charcoal">☁️ Cloud Sync Troubleshooter</h3>
-        <button onclick="closeSyncTroubleshooter()" class="text-gray-400 hover:text-charcoal text-xl">&times;</button>
-      </div>
-
-      <p class="text-xs text-gray-600">Use this tool to resolve sync discrepancies between Mobile and PC devices.</p>
-
-      <div class="space-y-2 bg-cream-100 p-3 rounded-xl border border-cream-200 text-xs">
-        <div class="flex justify-between items-center">
-          <span class="font-bold text-gray-600">Master Recipes:</span>
-          <span id="sync-stat-recipes" class="font-bold text-terracotta">--</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="font-bold text-gray-600">Scheduled Meal Plans:</span>
-          <span id="sync-stat-plans" class="font-bold text-terracotta">--</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="font-bold text-gray-600">Pantry Items:</span>
-          <span id="sync-stat-pantry" class="font-bold text-terracotta">--</span>
-        </div>
-      </div>
-
-      <div class="space-y-2 pt-2 border-t border-cream-200">
-        <button onclick="forcePullFromCloud()" class="w-full py-2 bg-sage hover:opacity-90 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center space-x-2">
-          <span>📥</span> <span>Force Download Latest Cloud Data</span>
-        </button>
-        <button onclick="forcePushToCloud()" class="w-full py-2 bg-terracotta hover:bg-terracotta-hover text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center space-x-2 admin-only hidden">
-          <span>📤</span> <span>Force Upload Local Data to Cloud</span>
-        </button>
-      </div>
-
-      <div class="text-right">
-        <button onclick="closeSyncTroubleshooter()" class="px-3 py-1.5 bg-cream-200 text-charcoal text-xs font-semibold rounded-lg">Close</button>
       </div>
     </div>
   </div>
@@ -430,7 +389,7 @@
     </div>
   </div>
 
-  <!-- MODAL: EDIT PANTRY ITEM (WITH DELETE BUTTON) -->
+  <!-- MODAL: EDIT PANTRY ITEM -->
   <div id="pantry-edit-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-cream-50 rounded-2xl max-w-sm w-full p-5 shadow-xl border border-cream-200 space-y-4">
       <div class="flex items-center justify-between border-b border-cream-200 pb-2">
@@ -492,7 +451,7 @@
         <button onclick="closeLoginModal()" class="text-gray-400 hover:text-charcoal text-xl">&times;</button>
       </div>
       
-      <p class="text-xs text-gray-600">Enter the admin password to publish and sync master recipes, meal plans, and pantry stock in real-time across devices.</p>
+      <p class="text-xs text-gray-600">Enter the admin password to unlock real-time live editing across all devices.</p>
       
       <div>
         <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Password</label>
@@ -805,29 +764,11 @@
       return s.trim().replace(/\s+/g, '');
     }
 
-    const INITIAL_RECIPES = [
-      {
-        id: "rec-1",
-        name: "Garlic Butter Pasta",
-        type: "🍝 Pasta",
-        servings: 2,
-        calories: 650,
-        createdAt: Date.now() - 100000,
-        modifiedAt: Date.now() - 100000,
-        ingredients: [
-          { name: "Spaghetti", qty: 250, unit: "g", category: "🧂 Pantry Staples" },
-          { name: "Garlic Cloves", qty: 4, unit: "clove", category: "🥬 Produce" },
-          { name: "Butter", qty: 30, unit: "g", category: "🥛 Dairy & Eggs" },
-          { name: "Parmesan Cheese", qty: 50, unit: "g", category: "🥛 Dairy & Eggs" }
-        ],
-        steps: ["Boil spaghetti in salted water until al dente.", "Sauté minced garlic in butter until fragrant.", "Toss pasta in garlic butter and top with parmesan."]
-      }
-    ];
-
-    let recipes = JSON.parse(localStorage.getItem('ks_recipes')) || INITIAL_RECIPES;
-    let pantry = JSON.parse(localStorage.getItem('ks_pantry')) || [];
-    let mealPlans = JSON.parse(localStorage.getItem('ks_mealPlans')) || {};
-    let shopLogs = JSON.parse(localStorage.getItem('ks_shopLogs')) || [];
+    // Dynamic Master In-Memory State (Directly Bound to Firebase Cloud)
+    let recipes = [];
+    let pantry = [];
+    let mealPlans = {};
+    let shopLogs = [];
     let pausedShopSession = JSON.parse(localStorage.getItem('ks_pausedShopSession')) || null;
     let isLoggedIn = localStorage.getItem('ks_isLoggedIn') === 'true';
 
@@ -886,7 +827,7 @@
       }
     }
 
-    // Overhauled Sync Engine (Guarantees Meal Planner & Tab Parity Across Mobile/Desktop)
+    // CLOUD-FIRST ENGINE (Push direct updates to Firebase Cloud)
     async function syncTabToCloud(tabKey, dataObj) {
       if (!isLoggedIn) return;
       try {
@@ -905,7 +846,7 @@
           body: JSON.stringify(payload)
         });
       } catch (e) {
-        console.error(`Firebase ${tabKey} sync error:`, e);
+        console.error(`Firebase ${tabKey} push error:`, e);
       }
     }
 
@@ -918,7 +859,7 @@
           body: JSON.stringify(recipeObj)
         });
       } catch (e) {
-        console.error("Firebase single recipe sync error:", e);
+        console.error("Firebase recipe push error:", e);
       }
     }
 
@@ -932,10 +873,6 @@
     }
 
     function saveState() {
-      localStorage.setItem('ks_recipes', JSON.stringify(recipes));
-      localStorage.setItem('ks_pantry', JSON.stringify(pantry));
-      localStorage.setItem('ks_mealPlans', JSON.stringify(mealPlans));
-      localStorage.setItem('ks_shopLogs', JSON.stringify(shopLogs));
       localStorage.setItem('ks_pausedShopSession', JSON.stringify(pausedShopSession));
       localStorage.setItem('ks_sortPreference', savedSortPreference);
 
@@ -946,6 +883,7 @@
       }
     }
 
+    // Realtime Firebase Cloud Listener (Fetches master data without caching interference)
     async function fetchPublicMasterData() {
       try {
         const resRec = await fetch(`${FIREBASE_DB_URL}recipes.json`);
@@ -982,38 +920,13 @@
           if (dataLog) shopLogs = Array.isArray(dataLog) ? dataLog : Object.values(dataLog);
         }
 
-        saveState();
         syncPantryWithRecipes();
         renderRecipes();
         renderPlanner();
         renderShopLogs();
       } catch (e) {
-        console.warn("Using offline/cached local state:", e);
+        console.warn("Error pulling master cloud state:", e);
       }
-    }
-
-    function openSyncTroubleshooter() {
-      document.getElementById('sync-stat-recipes').textContent = `${recipes.length} dishes`;
-      document.getElementById('sync-stat-plans').textContent = `${Object.keys(mealPlans).length} days assigned`;
-      document.getElementById('sync-stat-pantry').textContent = `${pantry.length} inventory items`;
-      document.getElementById('sync-modal').classList.remove('hidden');
-    }
-
-    function closeSyncTroubleshooter() {
-      document.getElementById('sync-modal').classList.add('hidden');
-    }
-
-    async function forcePullFromCloud() {
-      await fetchPublicMasterData();
-      alert("Latest cloud data successfully pulled and applied!");
-      closeSyncTroubleshooter();
-    }
-
-    async function forcePushToCloud() {
-      if (!isLoggedIn) return;
-      saveState();
-      alert("Local data successfully pushed to cloud!");
-      closeSyncTroubleshooter();
     }
 
     function openLoginModal() {
@@ -1711,7 +1624,7 @@
       document.getElementById('cook-mode-modal').classList.add('hidden');
     }
 
-    // MEAL PLANNER (WITH DISH RE-ORDERING)
+    // MEAL PLANNER
     function getMonday(d) {
       const date = new Date(d);
       const day = date.getDay();
@@ -1998,7 +1911,7 @@
       }
     }
 
-    // GROCERY LIST (WITH BOTTOM STRIKETHROUGH SORTING)
+    // GROCERY LIST (WITH ESTIMATED TOTAL PRICE)
     function generateGroceryList() {
       const startStr = document.getElementById('grocery-start-date').value;
       const endStr = document.getElementById('grocery-end-date').value;
@@ -2072,6 +1985,23 @@
       const items = Object.values(aggregated);
       document.getElementById('grocery-count-badge').textContent = `${items.length} unique items`;
 
+      // Calculate Estimated Price
+      let totalEstPrice = 0;
+      items.forEach(item => {
+        const itemKeyStr = makeKey(item.name);
+        const pantryMatch = pantry.find(p => makeKey(p.name) === itemKeyStr && (p.unit || '').toLowerCase().trim() === item.unit.toLowerCase());
+        const inPantry = pantryMatch ? Number(pantryMatch.qty) : 0;
+        const toBuy = Math.max(0, item.qty - inPantry);
+
+        if (toBuy > 0) {
+          const priceData = calculateAverageUnitPrice(item.name);
+          if (priceData) {
+            totalEstPrice += toBuy * parseFloat(priceData.avg);
+          }
+        }
+      });
+      document.getElementById('grocery-estimated-price-badge').textContent = `Est. Total: ₱${totalEstPrice.toFixed(2)}`;
+
       if (items.length === 0) {
         container.innerHTML = `<p class="text-center text-gray-400 text-xs py-6">No recipes scheduled within this date range.</p>`;
         return;
@@ -2086,7 +2016,6 @@
       categories.forEach(cat => {
         if (!grouped[cat]) return;
 
-        // Sort: Active needed items on top, fully-covered strikethrough items at the bottom
         grouped[cat].sort((a, b) => {
           const aKey = makeKey(a.name);
           const bKey = makeKey(b.name);
@@ -2505,7 +2434,7 @@
       }
     }
 
-    // PANTRY SECTION (WITH SELF-CONTAINED ZERO UNDO TIMER)
+    // PANTRY SECTION
     function renderPantry() {
       const container = document.getElementById('pantry-container');
       const jumpContainer = document.getElementById('pantry-jump-pills');
@@ -2585,7 +2514,7 @@
     function zeroPantryQtySelf(id) {
       const item = pantry.find(p => p.id === id);
       if (item && item.qty > 0) {
-        activeZeroTimers[id] = item.qty; // store previous qty
+        activeZeroTimers[id] = item.qty;
         item.qty = 0;
         item.modifiedAt = Date.now();
 
@@ -2832,7 +2761,6 @@
     // INIT
     initCategorySelects();
     updateSyncUI();
-    syncPantryWithRecipes();
     fetchPublicMasterData();
     checkActiveShopSessionBanner();
   </script>
