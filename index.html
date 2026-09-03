@@ -61,11 +61,11 @@
   <div id="undo-restock-banner" class="fixed bottom-5 right-5 z-50 bg-charcoal text-white p-4 rounded-2xl shadow-2xl flex items-center space-x-3 hidden animate-bounce">
     <span class="text-xl">⚠️</span>
     <div class="text-xs">
-      <p class="font-bold">Pantry Stock Deducted!</p>
+      <p class="font-bold" id="undo-banner-title">Pantry Stock Deducted!</p>
       <p class="text-[10px] text-gray-300">Made a mistake or testing?</p>
     </div>
     <button onclick="undoLastStockDeduction()" class="bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
-      ↺ Undo & Restock
+      ↺ Undo Changes
     </button>
   </div>
 
@@ -130,8 +130,9 @@
       <!-- Controls -->
       <div class="bg-cream-100 p-4 rounded-xl border border-cream-200 space-y-3">
         <div class="flex flex-col sm:flex-row gap-2">
-          <input type="text" id="recipe-search" oninput="renderRecipes()" placeholder="🔍 Search by dish name or ingredient..." class="flex-1 px-3 py-2 text-xs rounded-lg border border-cream-300 focus:outline-none focus:ring-1 focus:ring-terracotta bg-white">
-          <select id="recipe-sort" onchange="renderRecipes()" class="px-3 py-2 text-xs rounded-lg border border-cream-300 bg-white font-medium text-charcoal">
+          <!-- Password Manager Autocomplete Fix -->
+          <input type="text" id="recipe-search" autocomplete="off" data-lpignore="true" data-form-type="other" oninput="renderRecipes()" placeholder="🔍 Search by dish name or ingredient..." class="flex-1 px-3 py-2 text-xs rounded-lg border border-cream-300 focus:outline-none focus:ring-1 focus:ring-terracotta bg-white">
+          <select id="recipe-sort" onchange="handleSortChange(this.value)" class="px-3 py-2 text-xs rounded-lg border border-cream-300 bg-white font-medium text-charcoal">
             <option value="name-asc">Sort: Name (A-Z)</option>
             <option value="name-desc">Sort: Name (Z-A)</option>
             <option value="date-newest">Sort: Date Created (Newest)</option>
@@ -139,7 +140,8 @@
           </select>
         </div>
         
-        <div id="recipe-type-filters" class="flex flex-wrap gap-1.5 pt-1"></div>
+        <!-- Icon Filter Bar -->
+        <div id="recipe-type-filters" class="flex flex-wrap gap-1 pt-1"></div>
       </div>
 
       <div id="recipe-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
@@ -150,7 +152,7 @@
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 class="font-serif text-2xl font-bold text-charcoal">Meal Planner</h2>
-          <p class="text-xs text-gray-600">Assign multiple dishes per day in Weekly or Monthly view.</p>
+          <p class="text-xs text-gray-600">Assign multiple dishes per day with daily calorie tracking.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <div class="bg-cream-200 p-0.5 rounded-lg flex text-xs font-semibold">
@@ -173,7 +175,7 @@
       <div class="bg-cream-100 p-4 rounded-xl border border-cream-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 class="font-serif text-xl font-bold text-charcoal">Smart Grocery Aggregator</h2>
-          <p class="text-xs text-gray-600">Auto-converts measurements into unified units (ml / g) and auto-adds out-of-stock Household & Other items.</p>
+          <p class="text-xs text-gray-600">Auto-converts measurements into unified units and matches active pantry stock.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <label class="text-xs font-semibold text-gray-600">From:</label>
@@ -187,9 +189,14 @@
       </div>
 
       <div class="bg-white p-5 rounded-xl border border-cream-200 shadow-sm space-y-4">
-        <div class="flex items-center justify-between border-b border-cream-200 pb-3">
-          <h3 class="font-serif font-bold text-lg text-charcoal">Categorized Shopping List</h3>
-          <span id="grocery-count-badge" class="text-xs bg-cream-200 text-charcoal px-2.5 py-0.5 rounded-full font-semibold">0 items</span>
+        <div class="flex items-center justify-between border-b border-cream-200 pb-3 flex-wrap gap-2">
+          <div class="flex items-center space-x-2">
+            <h3 class="font-serif font-bold text-lg text-charcoal">Categorized Shopping List</h3>
+            <span id="grocery-count-badge" class="text-xs bg-cream-200 text-charcoal px-2.5 py-0.5 rounded-full font-semibold">0 items</span>
+          </div>
+          <button onclick="startShopMode()" class="bg-sage hover:opacity-90 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm flex items-center space-x-1.5 transition">
+            <span>🛍️</span> <span>Start Shop Mode</span>
+          </button>
         </div>
 
         <div id="grocery-categories-container" class="space-y-4">
@@ -239,7 +246,7 @@
   <!-- Footer -->
   <footer class="mt-auto py-6 border-t border-cream-200 bg-cream-100 text-left px-6 text-xs text-gray-500 font-medium">
     <div>Prompt Coded by ✈️.</div>
-    <div>September 2026. <span onclick="openChangelogModal()" class="text-terracotta font-bold hover:underline cursor-pointer">v18</span></div>
+    <div>September 2026. <span onclick="openChangelogModal()" class="text-terracotta font-bold hover:underline cursor-pointer">v19</span></div>
   </footer>
 
   <!-- MODAL: CHANGELOG -->
@@ -253,23 +260,23 @@
       <div class="p-5 overflow-y-auto space-y-4 custom-scroll text-xs flex-1">
         
         <div class="border-l-2 border-terracotta pl-3 space-y-1">
+          <span class="font-bold text-charcoal">v19 — Shop Mode, Multi-Tab Cloud Sync & Daily Calorie Summaries</span>
+          <p class="text-gray-600">Introduced interactive Shop Mode with auto-pantry restocking, expanded categories (Snack, Dessert, Breakfast), added icon-only filter bars, persisted sort preference, highlighted ingredient searches, added daily calorie counters to planner views, and synced all tabs (Meal Plan & Pantry) across devices for Admin users.</p>
+        </div>
+
+        <div class="border-l-2 border-cream-300 pl-3 space-y-1">
           <span class="font-bold text-charcoal">v18 — Async State Protection, Force Delete & Servings Sync</span>
-          <p class="text-gray-600">Prevented blank screens on refresh with local-first async fallback protection, added "Rice" to dish types, enabled force-delete option for duplicate pantry items (solving Olive Oil unit mismatch), fixed servings display card sync, and removed pencil icons from pantry rows to widen text area.</p>
+          <p class="text-gray-600">Prevented blank screens on refresh with local-first async fallback protection, added "Rice" to dish types, enabled force-delete option for duplicate pantry items, and fixed servings display card sync.</p>
         </div>
 
         <div class="border-l-2 border-cream-300 pl-3 space-y-1">
           <span class="font-bold text-charcoal">v17 — Dynamic Stock Deduction, Granular Sync & Smart Aliasing</span>
-          <p class="text-gray-600">Added interactive pantry stock deduction at the end of Cook Mode (with a 1-tap Undo safety banner), implemented fuzzy ingredient matching & aliasing across all 4 tools, enabled non-destructive granular per-recipe Firebase writes, and added weight-to-volume unit conversions.</p>
+          <p class="text-gray-600">Added interactive pantry stock deduction at the end of Cook Mode, fuzzy ingredient matching & aliasing across all 4 tools, non-destructive granular per-recipe Firebase writes, and weight-to-volume unit conversions.</p>
         </div>
 
         <div class="border-l-2 border-cream-300 pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v16 — One-Tap Logout, Color Lock Icons & Grocery Inspector Fix</span>
-          <p class="text-gray-600">Updated status button to allow instant logout without re-prompting for password, color-coded the admin lock icons (Red = Locked, Green = Logged In), alphabetized items inside grocery category folds, and fixed case-sensitivity mapping in the ingredient inspector.</p>
-        </div>
-
-        <div class="border-l-2 border-cream-300 pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v1-v15 — Core Architecture & Feature Expansions</span>
-          <p class="text-gray-600">Initial release featuring Recipe Manager, Pantry Inventory, Calorie Density Calculator, Dynamic Autocomplete, Grocery Aggregation, and Focus View.</p>
+          <span class="font-bold text-charcoal">v1-v16 — Core Architecture & Feature Expansions</span>
+          <p class="text-gray-600">Initial releases featuring Recipe Manager, Pantry Inventory, Calorie Calculator, Dynamic Autocomplete, Grocery Aggregation, and Focus Cook View.</p>
         </div>
 
       </div>
@@ -277,6 +284,48 @@
       <div class="p-3 bg-cream-100 border-t border-cream-200 text-right">
         <button onclick="closeChangelogModal()" class="px-4 py-1.5 bg-cream-200 text-charcoal text-xs font-semibold rounded-lg">Close</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FULLSCREEN SHOP MODE -->
+  <div id="shop-mode-modal" class="fixed inset-0 bg-cream-50 z-50 flex flex-col hidden overflow-hidden">
+    <div class="px-5 py-3 bg-cream-100 border-b border-cream-200 flex items-center justify-between shadow-sm flex-shrink-0">
+      <div class="flex items-center space-x-2 min-w-0">
+        <span class="text-2xl flex-shrink-0">🛍️</span>
+        <div class="truncate">
+          <h3 class="font-serif font-bold text-lg text-charcoal truncate">Interactive Shop Mode</h3>
+          <p id="shop-items-summary" class="text-[10px] text-sage font-bold">0 / 0 items in cart</p>
+        </div>
+      </div>
+      <button onclick="closeShopMode()" class="px-3 py-1.5 bg-cream-200 hover:bg-cream-300 text-charcoal font-bold text-xs rounded-lg transition">
+        ✕ Exit
+      </button>
+    </div>
+
+    <div class="bg-cream-100/80 p-3 border-b border-cream-200 flex flex-wrap gap-2 items-center flex-shrink-0">
+      <input type="text" id="shop-impulse-name" placeholder="+ Add Impulse Item (e.g. Snacks)..." class="flex-1 min-w-[150px] px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+      <input type="number" id="shop-impulse-qty" placeholder="Qty" step="0.1" value="1" class="w-16 px-2 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+      <select id="shop-impulse-unit" class="w-20 px-1 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+        <option value="pcs">pcs</option>
+        <option value="g">g</option>
+        <option value="ml">ml</option>
+        <option value="tbsp">tbsp</option>
+        <option value="cup">cup</option>
+      </select>
+      <button onclick="addImpulseShopItem()" class="bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
+        + Add Item
+      </button>
+    </div>
+
+    <div id="shop-items-container" class="flex-1 overflow-y-auto p-5 max-w-2xl mx-auto w-full space-y-4 custom-scroll"></div>
+
+    <div class="p-4 bg-cream-100 border-t border-cream-200 flex items-center justify-between flex-shrink-0 flex-wrap gap-2">
+      <button onclick="closeShopMode()" class="px-3 py-2 bg-cream-200 text-charcoal text-xs font-bold rounded-xl transition">
+        Exit (Keep Pantry Unchanged)
+      </button>
+      <button onclick="confirmAndRestockPantry()" class="px-4 py-2 bg-sage hover:opacity-90 text-white text-xs font-bold rounded-xl shadow-sm transition">
+        Done & Restock Pantry Stock 📦
+      </button>
     </div>
   </div>
 
@@ -289,7 +338,6 @@
       </div>
 
       <p class="text-xs text-gray-600">The following quantities will be subtracted from your active Pantry Stock:</p>
-
       <div id="deduct-preview-list" class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll text-xs"></div>
 
       <div class="flex justify-end space-x-2 pt-2 border-t border-cream-200">
@@ -361,7 +409,7 @@
         <button onclick="closeLoginModal()" class="text-gray-400 hover:text-charcoal text-xl">&times;</button>
       </div>
       
-      <p class="text-xs text-gray-600">Enter the admin password to publish and manage master recipes in the Kusina database.</p>
+      <p class="text-xs text-gray-600">Enter the admin password to publish and sync master recipes, meal plans, and pantry stock in real-time across devices.</p>
       
       <div>
         <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Password</label>
@@ -403,7 +451,9 @@
               <option value="🥗 Vegetable">🥗 Vegetable</option>
               <option value="🍝 Pasta">🍝 Pasta</option>
               <option value="🍚 Rice">🍚 Rice</option>
-              <option value="🥪 Sandwich">🥪 Sandwich</option>
+              <option value="🥪 Snack">🥪 Snack</option>
+              <option value="🍨 Dessert">🍨 Dessert</option>
+              <option value="🍳 Breakfast">🍳 Breakfast</option>
               <option value="🍲 Soup / Stew">🍲 Soup / Stew</option>
             </select>
           </div>
@@ -444,7 +494,10 @@
   <div id="assign-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-cream-50 rounded-2xl max-w-md w-full p-5 shadow-xl border border-cream-200 space-y-3">
       <div class="flex items-center justify-between border-b border-cream-200 pb-2">
-        <h3 id="assign-modal-date" class="font-serif font-bold text-charcoal text-sm">Meals for Date</h3>
+        <div>
+          <h3 id="assign-modal-date" class="font-serif font-bold text-charcoal text-sm">Meals for Date</h3>
+          <span id="assign-modal-cals" class="text-[10px] text-terracotta font-bold">Total Daily Cals: 0 kcal</span>
+        </div>
         <button onclick="closeAssignModal()" class="text-gray-400 hover:text-charcoal text-xl">&times;</button>
       </div>
       
@@ -455,7 +508,14 @@
 
       <div class="border-t border-cream-200 pt-2 space-y-2">
         <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-500">Add Dish to Day</label>
-        <input type="text" id="assign-search" oninput="renderAssignRecipeList()" placeholder="🔍 Search dishes..." class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+        <div class="flex gap-1.5">
+          <input type="text" id="assign-search" autocomplete="off" oninput="renderAssignRecipeList()" placeholder="🔍 Search dishes..." class="flex-1 px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+          <select id="assign-sort" onchange="renderAssignRecipeList()" class="px-2 py-1.5 text-xs rounded-lg border border-cream-300 bg-white font-medium text-charcoal">
+            <option value="name-asc">A-Z</option>
+            <option value="name-desc">Z-A</option>
+            <option value="date-newest">Newest</option>
+          </select>
+        </div>
         <div id="assign-type-filters" class="flex flex-wrap gap-1"></div>
       </div>
 
@@ -477,7 +537,7 @@
       </div>
 
       <div class="space-y-2">
-        <input type="text" id="inspector-search" oninput="filterInspectorRecipes()" placeholder="🔍 Filter dishes using this ingredient..." class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+        <input type="text" id="inspector-search" autocomplete="off" oninput="filterInspectorRecipes()" placeholder="🔍 Filter dishes using this ingredient..." class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
         <div id="inspector-type-filters" class="flex flex-wrap gap-1"></div>
       </div>
 
@@ -512,7 +572,6 @@
           </div>
         </div>
 
-        <!-- Cook Mode Action Banner -->
         <button id="preview-start-cook-btn" class="w-full py-3 bg-sage hover:opacity-90 text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center space-x-2 transition">
           <span>🍳</span> <span>Start Cook Mode (Focus View)</span>
         </button>
@@ -535,9 +594,8 @@
     </div>
   </div>
 
-  <!-- MODAL 5: FULLSCREEN COOK MODE / FOCUS VIEW -->
+  <!-- MODAL 5: FULLSCREEN COOK MODE -->
   <div id="cook-mode-modal" class="fixed inset-0 bg-cream-50 z-50 flex flex-col hidden overflow-hidden">
-    <!-- Header -->
     <div class="px-5 py-3 bg-cream-100 border-b border-cream-200 flex items-center justify-between shadow-sm flex-shrink-0">
       <div class="flex items-center space-x-2 min-w-0">
         <span class="text-2xl flex-shrink-0">🍳</span>
@@ -551,15 +609,11 @@
       </button>
     </div>
 
-    <!-- Progress Tracker -->
     <div class="bg-cream-200/60 h-1.5 w-full flex-shrink-0">
       <div id="cook-progress-bar" class="bg-terracotta h-full w-0 transition-all duration-300"></div>
     </div>
 
-    <!-- Scrollable Content -->
     <div class="flex-1 overflow-y-auto p-5 max-w-2xl mx-auto w-full space-y-6 custom-scroll">
-      
-      <!-- Ingredients Checklist -->
       <details open class="bg-white rounded-2xl border border-cream-200 shadow-sm overflow-hidden">
         <summary class="px-4 py-3 bg-cream-100 font-bold text-xs uppercase tracking-wider text-charcoal cursor-pointer flex justify-between items-center select-none">
           <span>1. Prep Ingredients</span>
@@ -568,15 +622,12 @@
         <div id="cook-ingredients-list" class="p-4 space-y-2 divide-y divide-cream-100 text-xs"></div>
       </details>
 
-      <!-- Cooking Steps -->
       <div class="space-y-3">
         <h4 class="font-bold text-xs uppercase tracking-wider text-gray-500 px-1">2. Cooking Steps</h4>
         <div id="cook-steps-list" class="space-y-3"></div>
       </div>
-
     </div>
 
-    <!-- Bottom Controls -->
     <div class="p-4 bg-cream-100 border-t border-cream-200 flex items-center justify-between flex-shrink-0 flex-wrap gap-2">
       <button onclick="resetCookProgress()" class="text-xs text-gray-500 font-semibold hover:text-terracotta">
         🔄 Reset Progress
@@ -603,7 +654,22 @@
       "🥤 Beverages", "🧼 Household", "📦 Other"
     ];
 
-    const dishTypes = ["ALL", "🍗 Chicken", "🥩 Beef", "🥓 Pork", "🐟 Fish / Seafood", "🥗 Vegetable", "🍝 Pasta", "🍚 Rice", "🥪 Sandwich", "🍲 Soup / Stew"];
+    const dishTypesMap = {
+      "ALL": "🔍 All",
+      "🍗 Chicken": "🍗",
+      "🥩 Beef": "🥩",
+      "🥓 Pork": "🥓",
+      "🐟 Fish / Seafood": "🐟",
+      "🥗 Vegetable": "🥗",
+      "🍝 Pasta": "🍝",
+      "🍚 Rice": "🍚",
+      "🥪 Snack": "🥪",
+      "🍨 Dessert": "🍨",
+      "🍳 Breakfast": "🍳",
+      "🍲 Soup / Stew": "🍲"
+    };
+
+    const dishTypes = Object.keys(dishTypesMap);
     const validUnits = ["g", "kg", "ml", "l", "pcs", "tbsp", "tsp", "cup", "clove", "pinch"];
 
     const CALORIE_DENSITY = {
@@ -674,6 +740,8 @@
     let mealPlans = JSON.parse(localStorage.getItem('ks_mealPlans')) || {};
     let isLoggedIn = localStorage.getItem('ks_isLoggedIn') === 'true';
 
+    let savedSortPreference = localStorage.getItem('ks_sortPreference') || "name-asc";
+
     let selectedTypeFilter = "ALL";
     let assignTypeFilter = "ALL";
     let inspectorTypeFilter = "ALL";
@@ -687,6 +755,8 @@
     let wakeLockSentinel = null;
     let activeCookRecipe = null;
     let previousPantrySnapshot = null;
+
+    let activeShopItems = [];
 
     function openChangelogModal() {
       document.getElementById('changelog-modal').classList.remove('hidden');
@@ -724,6 +794,20 @@
       }
     }
 
+    // Multi-Tab Cloud Sync (Recipes, Meal Plans & Pantry)
+    async function syncTabToCloud(tabKey, dataObj) {
+      if (!isLoggedIn) return;
+      try {
+        await fetch(`${FIREBASE_DB_URL}${tabKey}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dataObj)
+        });
+      } catch (e) {
+        console.error(`Firebase ${tabKey} sync error:`, e);
+      }
+    }
+
     async function saveRecipeToCloud(recipeObj) {
       if (!isLoggedIn) return;
       try {
@@ -750,23 +834,39 @@
       localStorage.setItem('ks_recipes', JSON.stringify(recipes));
       localStorage.setItem('ks_pantry', JSON.stringify(pantry));
       localStorage.setItem('ks_mealPlans', JSON.stringify(mealPlans));
+      localStorage.setItem('ks_sortPreference', savedSortPreference);
+
+      if (isLoggedIn) {
+        syncTabToCloud('pantry', pantry);
+        syncTabToCloud('mealPlans', mealPlans);
+      }
     }
 
-    // Local-First Async State Fallback Protection (Prevents Blank Screen on Refresh)
-    async function fetchPublicMasterRecipes() {
+    async function fetchPublicMasterData() {
       try {
-        const res = await fetch(`${FIREBASE_DB_URL}recipes.json`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data) {
-            recipes = Object.values(data);
-            saveState();
-            syncPantryWithRecipes();
-            renderRecipes();
-          }
+        const resRec = await fetch(`${FIREBASE_DB_URL}recipes.json`);
+        if (resRec.ok) {
+          const data = await resRec.json();
+          if (data) recipes = Object.values(data);
         }
+
+        const resPan = await fetch(`${FIREBASE_DB_URL}pantry.json`);
+        if (resPan.ok) {
+          const dataPan = await resPan.json();
+          if (dataPan) pantry = Array.isArray(dataPan) ? dataPan : Object.values(dataPan);
+        }
+
+        const resPlan = await fetch(`${FIREBASE_DB_URL}mealPlans.json`);
+        if (resPlan.ok) {
+          const dataPlan = await resPlan.json();
+          if (dataPlan) mealPlans = dataPlan;
+        }
+
+        saveState();
+        syncPantryWithRecipes();
+        renderRecipes();
       } catch (e) {
-        console.warn("Using offline/cached local recipe state:", e);
+        console.warn("Using offline/cached local state:", e);
       }
     }
 
@@ -786,9 +886,9 @@
         localStorage.setItem('ks_isLoggedIn', 'true');
         updateSyncUI();
         closeLoginModal();
-        await fetchPublicMasterRecipes();
+        await fetchPublicMasterData();
         renderRecipes();
-        alert("Admin Mode active!");
+        alert("Admin Mode active! Live cloud sync enabled for all tabs.");
       } else {
         alert("Incorrect password.");
       }
@@ -900,6 +1000,12 @@
       editCat.innerHTML = catHtml;
     }
 
+    function handleSortChange(val) {
+      savedSortPreference = val;
+      saveState();
+      renderRecipes();
+    }
+
     function switchTab(tabKey) {
       ['recipes', 'planner', 'grocery', 'pantry'].forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
@@ -941,13 +1047,17 @@
     // RECIPES VIEW
     function renderRecipes() {
       const grid = document.getElementById('recipe-grid');
-      const search = document.getElementById('recipe-search').value.toLowerCase();
-      const sort = document.getElementById('recipe-sort').value;
+      const search = document.getElementById('recipe-search').value.toLowerCase().trim();
+      
+      const sortSelect = document.getElementById('recipe-sort');
+      sortSelect.value = savedSortPreference;
+      const sort = sortSelect.value;
 
+      // Render Icon-Only Filter Bar
       const filterBox = document.getElementById('recipe-type-filters');
       filterBox.innerHTML = dishTypes.map(t => `
-        <button onclick="setRecipeFilter('${t}')" class="text-[10px] font-semibold px-2.5 py-1 rounded-full border transition ${selectedTypeFilter === t ? 'bg-terracotta text-white border-terracotta' : 'bg-white text-gray-600 border-cream-300 hover:bg-cream-200'}">
-          ${t}
+        <button onclick="setRecipeFilter('${t}')" title="${t}" class="px-2.5 py-1 rounded-lg border transition text-xs font-bold ${selectedTypeFilter === t ? 'bg-terracotta text-white border-terracotta' : 'bg-white text-gray-600 border-cream-300 hover:bg-cream-200'}">
+          ${dishTypesMap[t]}
         </button>
       `).join('');
 
@@ -977,8 +1087,16 @@
           if (!e.target.closest('button')) openPreviewModal(r.id);
         };
 
-        const ingTags = r.ingredients ? r.ingredients.map(i => `<span class="bg-cream-100 text-charcoal text-[10px] px-2 py-0.5 rounded-md">${i.qty} ${i.unit || ''} ${i.name}</span>`).join(' ') : '';
-        const servings = parseInt(r.servings) || 2; // Strict Servings Sync Fix
+        // Ingredient Search Highlighting
+        const ingTags = r.ingredients ? r.ingredients.map(i => {
+          const isMatch = search.length > 1 && i.name.toLowerCase().includes(search);
+          const tagClass = isMatch 
+            ? 'bg-terracotta-light text-terracotta ring-1 ring-terracotta font-bold' 
+            : 'bg-cream-100 text-charcoal';
+          return `<span class="${tagClass} text-[10px] px-2 py-0.5 rounded-md transition">${i.qty} ${i.unit || ''} ${i.name}</span>`;
+        }).join(' ') : '';
+
+        const servings = parseInt(r.servings) || 2;
         const calPerServing = r.calories ? Math.round(r.calories / servings) : null;
 
         card.innerHTML = `
@@ -1055,7 +1173,7 @@
 
       div.innerHTML = `
         <div class="flex-1 relative">
-          <input type="text" placeholder="Ingredient name" value="${name}" oninput="handleIngredientAutocomplete(this)" onblur="hideAutocompleteSuggestions(this)" class="ing-name w-full px-2 py-1 text-xs rounded-md border border-cream-300">
+          <input type="text" autocomplete="off" placeholder="Ingredient name" value="${name}" oninput="handleIngredientAutocomplete(this)" onblur="hideAutocompleteSuggestions(this)" class="ing-name w-full px-2 py-1 text-xs rounded-md border border-cream-300">
           <div class="autocomplete-suggestions absolute left-0 right-0 top-full mt-1 bg-white border border-cream-300 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto hidden"></div>
         </div>
         <div class="flex items-center space-x-1.5">
@@ -1259,7 +1377,7 @@
       document.getElementById('preview-modal').classList.add('hidden');
     }
 
-    // COOK MODE & DYNAMIC STOCK DEDUCTION
+    // COOK MODE
     async function startCookMode(recipeId) {
       activeCookRecipe = recipes.find(r => r.id === recipeId);
       if (!activeCookRecipe) return;
@@ -1272,7 +1390,7 @@
           document.getElementById('cook-wake-lock-status').textContent = '💡 Screen Stay-Awake: Active';
           document.getElementById('cook-wake-lock-status').className = 'text-[10px] text-sage font-bold';
         } else {
-          document.getElementById('cook-wake-lock-status').textContent = '⚠️ Screen Stay-Awake not supported by browser';
+          document.getElementById('cook-wake-lock-status').textContent = '⚠️ Screen Stay-Awake not supported';
           document.getElementById('cook-wake-lock-status').className = 'text-[10px] text-gray-400 font-semibold';
         }
       } catch (err) {
@@ -1404,6 +1522,7 @@
       closeDeductModal();
       exitCookMode();
 
+      document.getElementById('undo-banner-title').textContent = "Pantry Stock Deducted!";
       const banner = document.getElementById('undo-restock-banner');
       banner.classList.remove('hidden');
       setTimeout(() => banner.classList.add('hidden'), 10000);
@@ -1416,7 +1535,7 @@
         saveState();
         renderPantry();
         document.getElementById('undo-restock-banner').classList.add('hidden');
-        alert("Pantry stock restored successfully!");
+        alert("Pantry inventory state restored successfully!");
       }
     }
 
@@ -1430,12 +1549,25 @@
       document.getElementById('cook-mode-modal').classList.add('hidden');
     }
 
-    // MEAL PLANNER
+    // MEAL PLANNER & DAILY CALORIES
     function getMealPlanListForDate(dateKey) {
       const raw = mealPlans[dateKey];
       if (!raw) return [];
       if (Array.isArray(raw)) return raw;
       return [raw];
+    }
+
+    function calculateDailyCaloriesForDate(dateKey) {
+      const recIds = getMealPlanListForDate(dateKey);
+      let totalCals = 0;
+      recIds.forEach(id => {
+        const r = recipes.find(rec => rec.id === id);
+        if (r && r.calories) {
+          const servings = parseInt(r.servings) || 1;
+          totalCals += Math.round(r.calories / servings);
+        }
+      });
+      return totalCals;
     }
 
     function setPlannerView(mode) {
@@ -1480,9 +1612,10 @@
           const recIds = getMealPlanListForDate(key);
           const assignedRecipes = recIds.map(id => recipes.find(r => r.id === id)).filter(Boolean);
           const isToday = new Date().toISOString().split('T')[0] === key;
+          const dailyCals = calculateDailyCaloriesForDate(key);
 
           const card = document.createElement('div');
-          card.className = `bg-white rounded-xl border border-cream-200 p-3 min-h-[130px] flex flex-col justify-between ${isToday ? 'ring-1 ring-terracotta' : ''}`;
+          card.className = `bg-white rounded-xl border border-cream-200 p-3 min-h-[140px] flex flex-col justify-between ${isToday ? 'ring-1 ring-terracotta' : ''}`;
           
           let dishListHtml = assignedRecipes.map(rec => `
             <div onclick="openAssignModal('${key}')" class="p-1.5 mb-1 bg-cream-50 border border-cream-200 rounded-lg cursor-pointer hover:border-terracotta flex items-center justify-between">
@@ -1495,10 +1628,11 @@
 
           card.innerHTML = `
             <div>
-              <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center justify-between mb-1">
                 <span class="text-xs font-bold ${isToday ? 'text-terracotta' : 'text-gray-500'}">${day.toLocaleDateString('en-US', { weekday: 'short' })}</span>
-                <span class="text-[10px] text-gray-400">${day.getDate()}</span>
+                <span class="text-[10px] text-gray-400 font-bold">${day.getDate()}</span>
               </div>
+              ${dailyCals > 0 ? `<p class="text-[9px] font-bold text-terracotta mb-2">🔥 ${dailyCals} kcal</p>` : ''}
               <div class="space-y-1">${dishListHtml}</div>
             </div>
             <button onclick="openAssignModal('${key}')" class="w-full py-1.5 mt-2 border border-dashed border-cream-300 rounded-lg text-xs text-gray-500 hover:text-charcoal hover:bg-cream-100 font-medium">+ Add Dish</button>
@@ -1522,7 +1656,7 @@
         });
 
         for (let i = 0; i < firstDayIdx; i++) {
-          grid.appendChild(Object.assign(document.createElement('div'), { className: 'bg-cream-100/50 rounded-lg min-h-[70px]' }));
+          grid.appendChild(Object.assign(document.createElement('div'), { className: 'bg-cream-100/50 rounded-lg min-h-[75px]' }));
         }
 
         for (let d = 1; d <= daysInMonth; d++) {
@@ -1530,12 +1664,16 @@
           const key = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
           const recIds = getMealPlanListForDate(key);
           const assignedRecipes = recIds.map(id => recipes.find(r => r.id === id)).filter(Boolean);
+          const dailyCals = calculateDailyCaloriesForDate(key);
 
           const card = document.createElement('div');
-          card.className = 'bg-white rounded-lg border border-cream-200 p-1.5 min-h-[70px] flex flex-col justify-between cursor-pointer hover:border-terracotta';
+          card.className = 'bg-white rounded-lg border border-cream-200 p-1.5 min-h-[75px] flex flex-col justify-between cursor-pointer hover:border-terracotta';
           card.onclick = () => openAssignModal(key);
           card.innerHTML = `
-            <span class="text-[10px] font-bold text-gray-400">${d}</span>
+            <div class="flex justify-between items-center">
+              <span class="text-[10px] font-bold text-gray-400">${d}</span>
+              ${dailyCals > 0 ? `<span class="text-[8px] font-bold text-terracotta">🔥${dailyCals}</span>` : ''}
+            </div>
             <div class="space-y-0.5 overflow-hidden">
               ${assignedRecipes.map(rec => `<div class="bg-cream-100 p-0.5 rounded text-[9px] truncate font-semibold text-charcoal">${rec.type.split(' ')[0]} ${rec.name}</div>`).join('')}
             </div>
@@ -1561,6 +1699,9 @@
       const recIds = getMealPlanListForDate(selectedDateForAssign);
       const assignedRecipes = recIds.map(id => recipes.find(r => r.id === id)).filter(Boolean);
 
+      const dailyCals = calculateDailyCaloriesForDate(selectedDateForAssign);
+      document.getElementById('assign-modal-cals').textContent = `Total Daily Cals: ${dailyCals} kcal (1 serving / dish)`;
+
       if (assignedRecipes.length === 0) {
         container.innerHTML = `<p class="text-xs text-gray-400 italic py-1">No dishes scheduled for this date.</p>`;
         return;
@@ -1581,13 +1722,14 @@
     }
 
     function renderAssignRecipeList() {
-      const search = document.getElementById('assign-search').value.toLowerCase();
+      const search = document.getElementById('assign-search').value.toLowerCase().trim();
+      const sort = document.getElementById('assign-sort').value;
       const list = document.getElementById('assign-recipe-list');
       const filterBox = document.getElementById('assign-type-filters');
 
       filterBox.innerHTML = dishTypes.map(t => `
-        <button onclick="assignTypeFilter='${t}'; renderAssignRecipeList();" class="text-[9px] font-semibold px-2 py-0.5 rounded-full border transition ${assignTypeFilter === t ? 'bg-terracotta text-white border-terracotta' : 'bg-white text-gray-600 border-cream-300'}">
-          ${t}
+        <button onclick="assignTypeFilter='${t}'; renderAssignRecipeList();" title="${t}" class="text-[10px] font-bold px-2 py-0.5 rounded-md border transition ${assignTypeFilter === t ? 'bg-terracotta text-white border-terracotta' : 'bg-white text-gray-600 border-cream-300'}">
+          ${dishTypesMap[t]}
         </button>
       `).join('');
 
@@ -1595,6 +1737,13 @@
         const matchesType = assignTypeFilter === "ALL" || r.type === assignTypeFilter;
         const matchesSearch = r.name.toLowerCase().includes(search);
         return matchesType && matchesSearch;
+      });
+
+      // Default Alphabetical Sort for Assign Modal
+      filtered.sort((a, b) => {
+        if (sort === 'name-asc') return a.name.localeCompare(b.name);
+        if (sort === 'name-desc') return b.name.localeCompare(a.name);
+        if (sort === 'date-newest') return (b.createdAt || 0) - (a.createdAt || 0);
       });
 
       list.innerHTML = '';
@@ -1649,7 +1798,7 @@
       }
     }
 
-    // GROCERY LIST
+    // GROCERY LIST & SHOP MODE
     function generateGroceryList() {
       const startStr = document.getElementById('grocery-start-date').value;
       const endStr = document.getElementById('grocery-end-date').value;
@@ -1664,6 +1813,8 @@
         const d = new Date(dateKey);
         if (d >= startDate && d <= endDate) {
           const recIds = getMealPlanListForDate(dateKey);
+          const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+
           recIds.forEach(recId => {
             const rec = recipes.find(r => r.id === recId);
             if (rec && rec.ingredients) {
@@ -1687,7 +1838,7 @@
                 aggregated[key].usage.push({
                   recipeId: rec.id,
                   recipeName: rec.name,
-                  date: dateKey,
+                  date: `${dateKey} (${dayName})`,
                   rawQty: ing.qty,
                   rawUnit: ing.unit
                 });
@@ -1812,6 +1963,137 @@
       `;
 
       document.getElementById('inspector-modal').classList.remove('hidden');
+    }
+
+    // SHOP MODE & PANTRY RESTOCKING
+    function startShopMode() {
+      const items = Object.values(currentGroceryUsageMap);
+      if (items.length === 0) {
+        return alert("Please generate a grocery list first before entering Shop Mode!");
+      }
+
+      activeShopItems = items.map(i => {
+        const itemKeyStr = makeKey(i.name);
+        const pantryMatch = pantry.find(p => makeKey(p.name) === itemKeyStr && (p.unit || '').toLowerCase().trim() === i.unit.toLowerCase());
+        const inPantry = pantryMatch ? Number(pantryMatch.qty) : 0;
+        const toBuy = Math.max(0, i.qty - inPantry);
+
+        return {
+          id: `shop-${Date.now()}-${Math.random()}`,
+          name: i.name,
+          qty: toBuy > 0 ? toBuy : i.qty,
+          unit: i.unit,
+          category: i.category,
+          purchased: false
+        };
+      });
+
+      renderShopModeItems();
+      document.getElementById('shop-mode-modal').classList.remove('hidden');
+    }
+
+    function renderShopModeItems() {
+      const container = document.getElementById('shop-items-container');
+      container.innerHTML = '';
+
+      let purchasedCount = 0;
+      activeShopItems.forEach((item, idx) => {
+        if (item.purchased) purchasedCount++;
+
+        const div = document.createElement('div');
+        div.className = `p-3 rounded-xl border transition flex items-center justify-between gap-3 ${item.purchased ? 'bg-cream-100/60 border-cream-200 opacity-60' : 'bg-white border-cream-200 shadow-sm'}`;
+        div.innerHTML = `
+          <div class="flex items-center space-x-3 flex-1 min-w-0">
+            <input type="checkbox" ${item.purchased ? 'checked' : ''} onchange="toggleShopItemPurchased(${idx})" class="w-5 h-5 accent-sage rounded cursor-pointer flex-shrink-0">
+            <div class="truncate">
+              <p class="font-bold text-xs text-charcoal truncate ${item.purchased ? 'line-through text-gray-400' : ''}">${item.name}</p>
+              <span class="text-[9px] text-gray-400 font-semibold">${item.category}</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-1.5 flex-shrink-0">
+            <input type="number" step="0.1" value="${item.qty}" onchange="updateShopItemQty(${idx}, this.value)" class="w-16 px-1.5 py-1 text-xs border border-cream-300 rounded text-center font-bold text-terracotta bg-white">
+            <span class="text-xs font-semibold text-sage bg-sage-light px-2 py-1 rounded">${item.unit}</span>
+            <button onclick="removeShopItem(${idx})" class="text-gray-400 hover:text-red-500 text-sm px-1">&times;</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      document.getElementById('shop-items-summary').textContent = `${purchasedCount} / ${activeShopItems.length} items in cart`;
+    }
+
+    function toggleShopItemPurchased(idx) {
+      activeShopItems[idx].purchased = !activeShopItems[idx].purchased;
+      renderShopModeItems();
+    }
+
+    function updateShopItemQty(idx, val) {
+      activeShopItems[idx].qty = Math.max(0, parseFloat(val) || 0);
+    }
+
+    function removeShopItem(idx) {
+      activeShopItems.splice(idx, 1);
+      renderShopModeItems();
+    }
+
+    function addImpulseShopItem() {
+      const name = document.getElementById('shop-impulse-name').value.trim();
+      const qty = parseFloat(document.getElementById('shop-impulse-qty').value) || 1;
+      const unit = document.getElementById('shop-impulse-unit').value;
+
+      if (!name) return;
+
+      activeShopItems.unshift({
+        id: `shop-${Date.now()}`,
+        name,
+        qty,
+        unit,
+        category: '📦 Other',
+        purchased: true
+      });
+
+      document.getElementById('shop-impulse-name').value = '';
+      renderShopModeItems();
+    }
+
+    function confirmAndRestockPantry() {
+      previousPantrySnapshot = JSON.parse(JSON.stringify(pantry));
+
+      activeShopItems.forEach(item => {
+        if (item.purchased && item.qty > 0) {
+          const norm = normalizeMeasurement(item.qty, item.unit, item.name);
+          const matchKey = makeKey(item.name);
+          const pItem = pantry.find(p => makeKey(p.name) === matchKey);
+
+          if (pItem) {
+            pItem.qty += norm.qty;
+            pItem.modifiedAt = Date.now();
+          } else {
+            pantry.push({
+              id: `pan-${Date.now()}-${Math.random()}`,
+              name: item.name,
+              qty: norm.qty,
+              unit: norm.unit,
+              category: item.category || '🧂 Pantry Staples',
+              modifiedAt: Date.now()
+            });
+          }
+        }
+      });
+
+      saveState();
+      renderPantry();
+      closeShopMode();
+
+      document.getElementById('undo-banner-title').textContent = "Pantry Restocked from Shopping!";
+      const banner = document.getElementById('undo-restock-banner');
+      banner.classList.remove('hidden');
+      setTimeout(() => banner.classList.add('hidden'), 10000);
+    }
+
+    function closeShopMode() {
+      document.getElementById('shop-mode-modal').classList.add('hidden');
     }
 
     // PANTRY SECTION
@@ -1946,7 +2228,6 @@
       }
     }
 
-    // Advanced Force-Delete Logic for Duplicate Pantry Items (e.g. Olive Oil ml vs g)
     function deletePantryItem(id) {
       const item = pantry.find(p => p.id === id);
       if (!item) return;
@@ -1986,14 +2267,15 @@
       document.getElementById('inspector-modal').classList.remove('hidden');
     }
 
+    // Inspector displaying required quantity per recipe
     function filterInspectorRecipes() {
-      const search = document.getElementById('inspector-search').value.toLowerCase();
+      const search = document.getElementById('inspector-search').value.toLowerCase().trim();
       const filterBox = document.getElementById('inspector-type-filters');
       const body = document.getElementById('inspector-body');
 
       filterBox.innerHTML = dishTypes.map(t => `
-        <button onclick="inspectorTypeFilter='${t}'; filterInspectorRecipes();" class="text-[9px] font-semibold px-2 py-0.5 rounded-full border transition ${inspectorTypeFilter === t ? 'bg-terracotta text-white border-terracotta' : 'bg-white text-gray-600 border-cream-300'}">
-          ${t}
+        <button onclick="inspectorTypeFilter='${t}'; filterInspectorRecipes();" title="${t}" class="text-[10px] font-bold px-2 py-0.5 rounded-md border transition ${inspectorTypeFilter === t ? 'bg-terracotta text-white border-terracotta' : 'bg-white text-gray-600 border-cream-300'}">
+          ${dishTypesMap[t]}
         </button>
       `).join('');
 
@@ -2008,15 +2290,20 @@
       if (matchingRecipes.length === 0) {
         body.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">No matching recipes use this ingredient.</p>`;
       } else {
-        body.innerHTML = matchingRecipes.map(r => `
-          <div class="p-2.5 bg-cream-100 rounded-lg border border-cream-200 flex items-center justify-between">
-            <div>
-              <p class="font-bold text-charcoal text-xs">${r.name}</p>
-              <span class="text-[10px] text-terracotta font-semibold">${r.type}</span>
+        body.innerHTML = matchingRecipes.map(r => {
+          const ingDetail = r.ingredients.find(i => makeKey(i.name) === targetKey);
+          const reqQtyStr = ingDetail ? `${ingDetail.qty} ${ingDetail.unit || ''}` : '';
+
+          return `
+            <div class="p-2.5 bg-cream-100 rounded-lg border border-cream-200 flex items-center justify-between">
+              <div>
+                <p class="font-bold text-charcoal text-xs">${r.name}</p>
+                <p class="text-[10px] text-terracotta font-bold">${r.type} • Requires: <span class="text-charcoal">${reqQtyStr}</span></p>
+              </div>
+              <button onclick="closeInspectorModal(); openPreviewModal('${r.id}');" class="text-[10px] bg-terracotta text-white px-2 py-1 rounded font-medium hover:bg-terracotta-hover">View</button>
             </div>
-            <button onclick="closeInspectorModal(); openPreviewModal('${r.id}');" class="text-[10px] bg-terracotta text-white px-2 py-1 rounded font-medium hover:bg-terracotta-hover">View</button>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       }
     }
 
@@ -2061,7 +2348,7 @@
     initCategorySelects();
     updateSyncUI();
     syncPantryWithRecipes();
-    fetchPublicMasterRecipes();
+    fetchPublicMasterData();
   </script>
 </body>
 </html>
