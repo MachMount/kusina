@@ -109,6 +109,9 @@
       <button onclick="switchTab('pantry')" id="tab-pantry" class="tab-btn px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-charcoal flex items-center space-x-2 whitespace-nowrap">
         <span>🏺</span> <span>Pantry Stock</span>
       </button>
+      <button onclick="switchTab('shoplog')" id="tab-shoplog" class="tab-btn px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-charcoal flex items-center space-x-2 whitespace-nowrap">
+        <span>📊</span> <span>Shop Log</span>
+      </button>
     </nav>
   </header>
 
@@ -130,7 +133,6 @@
       <!-- Controls -->
       <div class="bg-cream-100 p-4 rounded-xl border border-cream-200 space-y-3">
         <div class="flex flex-col sm:flex-row gap-2">
-          <!-- Password Manager Autocomplete Fix -->
           <input type="search" id="recipe-search" name="recipe_query_search" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="renderRecipes()" placeholder="🔍 Search by dish name or ingredient..." class="flex-1 px-3 py-2 text-xs rounded-lg border border-cream-300 focus:outline-none focus:ring-1 focus:ring-terracotta bg-white">
           <select id="recipe-sort" onchange="handleSortChange(this.value)" class="px-3 py-2 text-xs rounded-lg border border-cream-300 bg-white font-medium text-charcoal">
             <option value="name-asc">Sort: Name (A-Z)</option>
@@ -154,7 +156,7 @@
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 class="font-serif text-2xl font-bold text-charcoal">Meal Planner</h2>
-          <p class="text-xs text-gray-600">Assign multiple dishes per day with daily calorie tracking.</p>
+          <p class="text-xs text-gray-600">Assign multiple dishes per day with Monday-start week layouts.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <div class="bg-cream-200 p-0.5 rounded-lg flex text-xs font-semibold">
@@ -174,19 +176,30 @@
 
     <!-- 3. GROCERY LIST TAB -->
     <section id="view-grocery" class="space-y-5 hidden">
+      <!-- Active Shop Session Banner -->
+      <div id="active-shop-banner" class="bg-sage-light border border-sage text-charcoal p-3.5 rounded-xl flex items-center justify-between hidden shadow-sm">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">🛒</span>
+          <div>
+            <p class="font-bold text-xs">Active Shop Session Paused</p>
+            <p class="text-[10px] text-gray-600">You have a paused shopping trip in progress.</p>
+          </div>
+        </div>
+        <button onclick="resumeShopMode()" class="bg-sage hover:opacity-90 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-sm transition">
+          Resume Shop Session 🛍️
+        </button>
+      </div>
+
       <div class="bg-cream-100 p-4 rounded-xl border border-cream-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 class="font-serif text-xl font-bold text-charcoal">Smart Grocery Aggregator</h2>
-          <p class="text-xs text-gray-600">Auto-converts measurements into unified units and matches active pantry stock.</p>
+          <p class="text-xs text-gray-600">Auto-converts measurements and automatically updates when dates change.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <label class="text-xs font-semibold text-gray-600">From:</label>
-          <input type="date" id="grocery-start-date" class="px-2 py-1 text-xs border border-cream-300 rounded-md bg-white">
+          <input type="date" id="grocery-start-date" onchange="generateGroceryList()" class="px-2 py-1 text-xs border border-cream-300 rounded-md bg-white">
           <label class="text-xs font-semibold text-gray-600">To:</label>
-          <input type="date" id="grocery-end-date" class="px-2 py-1 text-xs border border-cream-300 rounded-md bg-white">
-          <button onclick="generateGroceryList()" class="bg-terracotta hover:bg-terracotta-hover text-white text-xs font-medium px-3 py-1.5 rounded-md transition">
-            Generate
-          </button>
+          <input type="date" id="grocery-end-date" onchange="generateGroceryList()" class="px-2 py-1 text-xs border border-cream-300 rounded-md bg-white">
         </div>
       </div>
 
@@ -202,7 +215,7 @@
         </div>
 
         <div id="grocery-categories-container" class="space-y-4">
-          <p class="text-center text-gray-400 text-sm py-6">Select a date range and click Generate to build your list.</p>
+          <p class="text-center text-gray-400 text-sm py-6">Select a date range to build your list.</p>
         </div>
       </div>
     </section>
@@ -222,7 +235,7 @@
       <div id="pantry-jump-pills" class="flex flex-wrap gap-1.5 overflow-x-auto custom-scroll pb-1"></div>
 
       <div class="bg-cream-100 p-4 rounded-xl border border-cream-200 flex flex-wrap gap-2 items-center">
-        <input type="text" id="pantry-name-input" placeholder="Custom Item (e.g. Olive Oil)" class="flex-1 min-w-[150px] px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+        <input type="text" id="pantry-name-input" placeholder="Custom Item" class="flex-1 min-w-[150px] px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
         <input type="number" id="pantry-qty-input" placeholder="Qty" step="0.1" class="w-20 px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
         <select id="pantry-unit-input" class="w-24 px-2 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
           <option value="ml">ml</option>
@@ -243,12 +256,27 @@
       <div id="pantry-container" class="space-y-3"></div>
     </section>
 
+    <!-- 5. SHOP LOG TAB -->
+    <section id="view-shoplog" class="space-y-5 hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="font-serif text-2xl font-bold text-charcoal">Shop Log</h2>
+          <p class="text-xs text-gray-600">History of completed shopping trips and restocked pantry logs.</p>
+        </div>
+        <button onclick="clearAllShopLogs()" class="admin-only hidden bg-cream-100 hover:bg-cream-200 text-charcoal text-xs font-semibold px-3 py-2 rounded-lg border border-cream-300 transition self-start sm:self-auto">
+          🗑️ Clear All Logs
+        </button>
+      </div>
+
+      <div id="shoplog-container" class="space-y-4"></div>
+    </section>
+
   </main>
 
   <!-- Footer -->
   <footer class="mt-auto py-6 border-t border-cream-200 bg-cream-100 text-left px-6 text-xs text-gray-500 font-medium">
     <div>Prompt Coded by ✈️.</div>
-    <div>September 2026. <span onclick="openChangelogModal()" class="text-terracotta font-bold hover:underline cursor-pointer">v20</span></div>
+    <div>September 2026. <span onclick="openChangelogModal()" class="text-terracotta font-bold hover:underline cursor-pointer">v21</span></div>
   </footer>
 
   <!-- MODAL: CHANGELOG -->
@@ -260,22 +288,20 @@
       </div>
       
       <div class="p-5 overflow-y-auto space-y-4 custom-scroll text-xs flex-1">
-        
         <div class="border-l-2 border-terracotta pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v20 — Impulse Autocomplete, Clean Pantry UI & Sync Fix</span>
-          <p class="text-gray-600">Added category selector & pantry autocomplete to Shop Mode impulse bar, grouped Shop Mode by master categories, removed checkboxes from static Grocery List, cleaned out "(Out of Stock)" text tags, restored Sandwich category, added Sort by Calories, and fixed cross-device Meal Planner cloud sync.</p>
+          <span class="font-bold text-charcoal">v21 — Shop Log, Pausable Shop Sessions & Monday Calendars</span>
+          <p class="text-gray-600">Introduced the Shop Log tab for trip tracking, added a Pause & Resume session button to Shop Mode, switched calendars to Monday-start, auto-updated grocery dates when navigating views, and resolved cross-device Meal Planner sync.</p>
         </div>
 
         <div class="border-l-2 border-cream-300 pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v19 — Shop Mode, Multi-Tab Cloud Sync & Daily Calorie Summaries</span>
-          <p class="text-gray-600">Introduced interactive Shop Mode with auto-pantry restocking, expanded categories, icon-only filter bars, persisted sort preference, and synced all tabs across devices for Admin users.</p>
+          <span class="font-bold text-charcoal">v20 — Impulse Autocomplete & Clean Pantry UI</span>
+          <p class="text-gray-600">Added category selector & pantry autocomplete to Shop Mode impulse bar, grouped Shop Mode by master categories, removed checkboxes from static Grocery List, and cleaned out "(Out of Stock)" text tags.</p>
         </div>
 
         <div class="border-l-2 border-cream-300 pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v1-v18 — Core Architecture & Feature Expansions</span>
+          <span class="font-bold text-charcoal">v1-v19 — Core Architecture & Feature Expansions</span>
           <p class="text-gray-600">Initial releases featuring Recipe Manager, Pantry Inventory, Calorie Calculator, Dynamic Autocomplete, Grocery Aggregation, and Focus Cook View.</p>
         </div>
-
       </div>
 
       <div class="p-3 bg-cream-100 border-t border-cream-200 text-right">
@@ -294,15 +320,20 @@
           <p id="shop-items-summary" class="text-[10px] text-sage font-bold">0 / 0 items in cart</p>
         </div>
       </div>
-      <button onclick="closeShopMode()" class="px-3 py-1.5 bg-cream-200 hover:bg-cream-300 text-charcoal font-bold text-xs rounded-lg transition">
-        ✕ Exit
-      </button>
+      <div class="flex items-center space-x-2">
+        <button onclick="pauseShopSession()" class="px-3 py-1.5 bg-cream-200 hover:bg-cream-300 text-charcoal font-bold text-xs rounded-lg transition flex items-center space-x-1">
+          <span>⏸️</span> <span>Pause Session</span>
+        </button>
+        <button onclick="closeShopMode()" class="px-3 py-1.5 bg-cream-200 hover:bg-cream-300 text-gray-500 hover:text-charcoal font-bold text-xs rounded-lg transition">
+          ✕ Exit
+        </button>
+      </div>
     </div>
 
-    <!-- Enhanced Impulse Bar with Category & Autocomplete -->
+    <!-- Impulse Bar -->
     <div class="bg-cream-100/80 p-3 border-b border-cream-200 flex flex-wrap gap-2 items-center flex-shrink-0 relative">
       <div class="flex-1 min-w-[150px] relative">
-        <input type="text" id="shop-impulse-name" autocomplete="off" placeholder="+ Add Impulse Item (e.g. Snacks)..." oninput="handleImpulseAutocomplete(this)" onblur="hideImpulseAutocomplete(this)" class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+        <input type="text" id="shop-impulse-name" autocomplete="off" placeholder="Add Impulse Item" oninput="handleImpulseAutocomplete(this)" onblur="hideImpulseAutocomplete(this)" class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
         <div id="shop-impulse-suggestions" class="absolute left-0 right-0 top-full mt-1 bg-white border border-cream-300 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto hidden"></div>
       </div>
       <input type="number" id="shop-impulse-qty" placeholder="Qty" step="0.1" value="1" class="w-16 px-2 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
@@ -313,9 +344,12 @@
         <option value="tbsp">tbsp</option>
         <option value="cup">cup</option>
       </select>
-      <select id="shop-impulse-cat" class="w-32 px-1.5 py-1.5 text-xs rounded-lg border border-cream-300 bg-white"></select>
+      <select id="shop-impulse-cat" class="w-40 px-1.5 py-1.5 text-xs rounded-lg border border-cream-300 bg-white"></select>
       <button onclick="addImpulseShopItem()" class="bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
         + Add Item
+      </button>
+      <button onclick="clearImpulseInputs()" class="bg-cream-200 hover:bg-cream-300 text-charcoal text-xs font-semibold px-2.5 py-1.5 rounded-lg transition" title="Clear Impulse Inputs">
+        🧹 Clear
       </button>
     </div>
 
@@ -653,7 +687,7 @@
 
     const categories = [
       "🥬 Produce", "🥩 Meat & Seafood", "🥛 Dairy & Eggs", 
-      "🍞 Bakery", "🧂 Pantry Staples", "🍟 Snacks", "🧊 Frozen", 
+      "🍞 Bakery", "🧂 Pantry Staples", "🍿 Snacks", "🧊 Frozen", 
       "🥤 Beverages", "🧼 Household", "📦 Other"
     ];
 
@@ -742,6 +776,8 @@
     let recipes = JSON.parse(localStorage.getItem('ks_recipes')) || INITIAL_RECIPES;
     let pantry = JSON.parse(localStorage.getItem('ks_pantry')) || [];
     let mealPlans = JSON.parse(localStorage.getItem('ks_mealPlans')) || {};
+    let shopLogs = JSON.parse(localStorage.getItem('ks_shopLogs')) || [];
+    let pausedShopSession = JSON.parse(localStorage.getItem('ks_pausedShopSession')) || null;
     let isLoggedIn = localStorage.getItem('ks_isLoggedIn') === 'true';
 
     let savedSortPreference = localStorage.getItem('ks_sortPreference') || "name-asc";
@@ -798,14 +834,21 @@
       }
     }
 
-    // Fixed Multi-Tab Cloud Sync (Meal Plans Object Sanitization)
+    // Sanitized Cloud Sync Engine (Guarantees Object Structure for Dates)
     async function syncTabToCloud(tabKey, dataObj) {
       if (!isLoggedIn) return;
       try {
+        let payload = dataObj;
+        if (tabKey === 'mealPlans') {
+          payload = {};
+          Object.keys(dataObj).forEach(d => {
+            payload[d] = { dishes: Array.isArray(dataObj[d]) ? dataObj[d] : [dataObj[d]] };
+          });
+        }
         await fetch(`${FIREBASE_DB_URL}${tabKey}.json`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(dataObj)
+          body: JSON.stringify(payload)
         });
       } catch (e) {
         console.error(`Firebase ${tabKey} sync error:`, e);
@@ -838,11 +881,14 @@
       localStorage.setItem('ks_recipes', JSON.stringify(recipes));
       localStorage.setItem('ks_pantry', JSON.stringify(pantry));
       localStorage.setItem('ks_mealPlans', JSON.stringify(mealPlans));
+      localStorage.setItem('ks_shopLogs', JSON.stringify(shopLogs));
+      localStorage.setItem('ks_pausedShopSession', JSON.stringify(pausedShopSession));
       localStorage.setItem('ks_sortPreference', savedSortPreference);
 
       if (isLoggedIn) {
         syncTabToCloud('pantry', pantry);
         syncTabToCloud('mealPlans', mealPlans);
+        syncTabToCloud('shopLogs', shopLogs);
       }
     }
 
@@ -863,15 +909,30 @@
         const resPlan = await fetch(`${FIREBASE_DB_URL}mealPlans.json`);
         if (resPlan.ok) {
           const dataPlan = await resPlan.json();
-          if (dataPlan) {
-            mealPlans = typeof dataPlan === 'object' ? dataPlan : {};
+          if (dataPlan && typeof dataPlan === 'object') {
+            const parsedPlans = {};
+            Object.keys(dataPlan).forEach(dateKey => {
+              if (dataPlan[dateKey] && dataPlan[dateKey].dishes) {
+                parsedPlans[dateKey] = dataPlan[dateKey].dishes;
+              } else if (Array.isArray(dataPlan[dateKey])) {
+                parsedPlans[dateKey] = dataPlan[dateKey];
+              }
+            });
+            mealPlans = parsedPlans;
           }
+        }
+
+        const resLog = await fetch(`${FIREBASE_DB_URL}shopLogs.json`);
+        if (resLog.ok) {
+          const dataLog = await resLog.json();
+          if (dataLog) shopLogs = Array.isArray(dataLog) ? dataLog : Object.values(dataLog);
         }
 
         saveState();
         syncPantryWithRecipes();
         renderRecipes();
         renderPlanner();
+        renderShopLogs();
       } catch (e) {
         console.warn("Using offline/cached local state:", e);
       }
@@ -896,6 +957,7 @@
         await fetchPublicMasterData();
         renderRecipes();
         renderPlanner();
+        renderShopLogs();
         alert("Admin Mode active! Live cloud sync enabled for all tabs.");
       } else {
         alert("Incorrect password.");
@@ -907,6 +969,7 @@
       localStorage.setItem('ks_isLoggedIn', 'false');
       updateSyncUI();
       renderRecipes();
+      renderShopLogs();
     }
 
     function syncPantryWithRecipes() {
@@ -1005,9 +1068,13 @@
       const editCat = document.getElementById('edit-pantry-cat');
       const shopImpCat = document.getElementById('shop-impulse-cat');
       const catHtml = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+      
       pCat.innerHTML = catHtml;
       editCat.innerHTML = catHtml;
-      if (shopImpCat) shopImpCat.innerHTML = catHtml;
+      
+      if (shopImpCat) {
+        shopImpCat.innerHTML = `<option value="" disabled selected>Select a Pantry Category...</option>` + catHtml;
+      }
     }
 
     function handleSortChange(val) {
@@ -1017,7 +1084,7 @@
     }
 
     function switchTab(tabKey) {
-      ['recipes', 'planner', 'grocery', 'pantry'].forEach(t => {
+      ['recipes', 'planner', 'grocery', 'pantry', 'shoplog'].forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
         const btn = document.getElementById(`tab-${t}`);
         btn.classList.remove('border-terracotta', 'text-terracotta');
@@ -1032,7 +1099,11 @@
       if (tabKey === 'recipes') renderRecipes();
       if (tabKey === 'planner') renderPlanner();
       if (tabKey === 'pantry') renderPantry();
-      if (tabKey === 'grocery') generateGroceryList();
+      if (tabKey === 'grocery') {
+        checkActiveShopSessionBanner();
+        generateGroceryList();
+      }
+      if (tabKey === 'shoplog') renderShopLogs();
     }
 
     function autoCalculateCalories() {
@@ -1054,7 +1125,7 @@
       document.getElementById('form-recipe-calories').value = Math.round(total) || 500;
     }
 
-    // RECIPES VIEW & CALORIES SORTING
+    // RECIPES VIEW
     function renderRecipes() {
       const grid = document.getElementById('recipe-grid');
       const search = document.getElementById('recipe-search').value.toLowerCase().trim();
@@ -1559,7 +1630,14 @@
       document.getElementById('cook-mode-modal').classList.add('hidden');
     }
 
-    // MEAL PLANNER
+    // MEAL PLANNER (MONDAY-START & DYNAMIC GROCERY DATES)
+    function getMonday(d) {
+      const date = new Date(d);
+      const day = date.getDay();
+      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+      return new Date(date.setDate(diff));
+    }
+
     function getMealPlanListForDate(dateKey) {
       if (!mealPlans) return [];
       const raw = mealPlans[dateKey];
@@ -1601,13 +1679,14 @@
 
       if (plannerMode === 'week') {
         grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2';
-        const start = new Date(now);
-        start.setDate(now.getDate() - now.getDay() + (plannerOffset * 7));
+        
+        const monday = getMonday(now);
+        monday.setDate(monday.getDate() + (plannerOffset * 7));
 
         const days = [];
         for (let i = 0; i < 7; i++) {
-          const d = new Date(start);
-          d.setDate(start.getDate() + i);
+          const d = new Date(monday);
+          d.setDate(monday.getDate() + i);
           days.push(d);
         }
 
@@ -1615,6 +1694,7 @@
         const endStr = days[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         document.getElementById('planner-period-label').textContent = `${startStr} - ${endStr}`;
 
+        // Auto-update Grocery bounds
         document.getElementById('grocery-start-date').value = days[0].toISOString().split('T')[0];
         document.getElementById('grocery-end-date').value = days[6].toISOString().split('T')[0];
 
@@ -1656,10 +1736,16 @@
         const targetMonth = new Date(now.getFullYear(), now.getMonth() + plannerOffset, 1);
         document.getElementById('planner-period-label').textContent = targetMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-        const firstDayIdx = targetMonth.getDay();
         const daysInMonth = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0).getDate();
+        
+        let firstDayIdx = targetMonth.getDay() - 1;
+        if (firstDayIdx === -1) firstDayIdx = 6;
 
-        ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(h => {
+        const lastDayOfMonth = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), daysInMonth);
+        document.getElementById('grocery-start-date').value = targetMonth.toISOString().split('T')[0];
+        document.getElementById('grocery-end-date').value = lastDayOfMonth.toISOString().split('T')[0];
+
+        ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach(h => {
           grid.appendChild(Object.assign(document.createElement('div'), {
             className: 'text-center text-[10px] font-bold text-gray-400 py-1',
             textContent: h
@@ -1692,6 +1778,8 @@
           grid.appendChild(card);
         }
       }
+
+      generateGroceryList();
     }
 
     function openAssignModal(dateKey) {
@@ -1808,7 +1896,7 @@
       }
     }
 
-    // GROCERY LIST (STATIC PREVIEW WITHOUT CHECKBOXES)
+    // GROCERY LIST
     function generateGroceryList() {
       const startStr = document.getElementById('grocery-start-date').value;
       const endStr = document.getElementById('grocery-end-date').value;
@@ -1902,7 +1990,6 @@
         catBox.open = true;
         catBox.className = 'bg-cream-50 rounded-xl border border-cream-200 overflow-hidden';
         
-        // Clean List without Checkboxes in Main Tab View
         const listHtml = grouped[cat].map(item => {
           const itemKeyStr = makeKey(item.name);
           const pantryMatch = pantry.find(p => makeKey(p.name) === itemKeyStr && (p.unit || '').toLowerCase().trim() === item.unit.toLowerCase());
@@ -1961,8 +2048,23 @@
       document.getElementById('inspector-modal').classList.remove('hidden');
     }
 
-    // SHOP MODE (CATEGORIZED, ALPHABETIZED, WITH IMPULSE AUTOCOMPLETE)
+    // SHOP MODE & PAUSE / RESUME SESSIONS
+    function checkActiveShopSessionBanner() {
+      const banner = document.getElementById('active-shop-banner');
+      if (pausedShopSession && pausedShopSession.length > 0) {
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
     function startShopMode() {
+      if (pausedShopSession && pausedShopSession.length > 0) {
+        if (confirm("You have a paused shop session. Would you like to resume it?")) {
+          return resumeShopMode();
+        }
+      }
+
       const items = Object.values(currentGroceryUsageMap);
       if (items.length === 0) {
         return alert("Please generate a grocery list first before entering Shop Mode!");
@@ -1988,6 +2090,28 @@
 
       renderShopModeItems();
       document.getElementById('shop-mode-modal').classList.remove('hidden');
+    }
+
+    function pauseShopSession() {
+      pausedShopSession = JSON.parse(JSON.stringify(activeShopItems));
+      saveState();
+      closeShopMode();
+      checkActiveShopSessionBanner();
+    }
+
+    function resumeShopMode() {
+      if (!pausedShopSession || pausedShopSession.length === 0) return;
+      initCategorySelects();
+      activeShopItems = JSON.parse(JSON.stringify(pausedShopSession));
+      renderShopModeItems();
+      document.getElementById('shop-mode-modal').classList.remove('hidden');
+    }
+
+    function clearImpulseInputs() {
+      document.getElementById('shop-impulse-name').value = '';
+      document.getElementById('shop-impulse-qty').value = '1';
+      document.getElementById('shop-impulse-unit').value = 'pcs';
+      document.getElementById('shop-impulse-cat').selectedIndex = 0;
     }
 
     function handleImpulseAutocomplete(input) {
@@ -2033,7 +2157,7 @@
       const name = document.getElementById('shop-impulse-name').value.trim();
       const qty = parseFloat(document.getElementById('shop-impulse-qty').value) || 1;
       const unit = document.getElementById('shop-impulse-unit').value;
-      const category = document.getElementById('shop-impulse-cat').value;
+      const category = document.getElementById('shop-impulse-cat').value || '📦 Other';
 
       if (!name) return;
 
@@ -2046,7 +2170,7 @@
         purchased: true
       });
 
-      document.getElementById('shop-impulse-name').value = '';
+      clearImpulseInputs();
       renderShopModeItems();
     }
 
@@ -2125,12 +2249,15 @@
 
     function confirmAndRestockPantry() {
       previousPantrySnapshot = JSON.parse(JSON.stringify(pantry));
+      const boughtLogItems = [];
 
       activeShopItems.forEach(item => {
         if (item.purchased && item.qty > 0) {
           const norm = normalizeMeasurement(item.qty, item.unit, item.name);
           const matchKey = makeKey(item.name);
           const pItem = pantry.find(p => makeKey(p.name) === matchKey);
+
+          boughtLogItems.push({ name: item.name, qty: norm.qty, unit: norm.unit, category: item.category });
 
           if (pItem) {
             pItem.qty += norm.qty;
@@ -2148,11 +2275,24 @@
         }
       });
 
+      // Save Shop Log
+      if (boughtLogItems.length > 0) {
+        shopLogs.unshift({
+          id: `log-${Date.now()}`,
+          timestamp: Date.now(),
+          itemCount: boughtLogItems.length,
+          items: boughtLogItems
+        });
+      }
+
+      pausedShopSession = null;
       saveState();
       renderPantry();
+      renderShopLogs();
       closeShopMode();
+      checkActiveShopSessionBanner();
 
-      document.getElementById('undo-banner-title').textContent = "Pantry Restocked from Shopping!";
+      document.getElementById('undo-banner-title').textContent = "Pantry Restocked & Log Saved!";
       const banner = document.getElementById('undo-restock-banner');
       banner.classList.remove('hidden');
       setTimeout(() => banner.classList.add('hidden'), 10000);
@@ -2162,7 +2302,62 @@
       document.getElementById('shop-mode-modal').classList.add('hidden');
     }
 
-    // PANTRY SECTION (CLEANED OUT "OUT OF STOCK" TEXT)
+    // SHOP LOG VIEW
+    function renderShopLogs() {
+      const container = document.getElementById('shoplog-container');
+      container.innerHTML = '';
+
+      if (shopLogs.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-400 text-xs py-10">No completed shopping trips logged yet.</p>`;
+        return;
+      }
+
+      shopLogs.forEach((log, idx) => {
+        const dateStr = new Date(log.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+        const box = document.createElement('details');
+        box.className = 'bg-white rounded-xl border border-cream-200 shadow-sm overflow-hidden';
+        
+        const itemRows = log.items ? log.items.map(i => `
+          <div class="py-2 px-4 flex justify-between text-xs border-b border-cream-100 last:border-none">
+            <span class="font-bold text-charcoal">${i.name}</span>
+            <span class="text-terracotta font-bold">${i.qty} ${i.unit} <span class="text-[9px] text-gray-400 font-normal">(${i.category})</span></span>
+          </div>
+        `).join('') : '';
+
+        box.innerHTML = `
+          <summary class="px-4 py-3 bg-cream-100 font-bold text-xs text-charcoal cursor-pointer flex justify-between items-center select-none">
+            <div class="flex items-center space-x-2">
+              <span>🛍️ ${dateStr}</span>
+              <span class="text-[10px] bg-sage-light text-sage px-2 py-0.5 rounded-full">${log.itemCount} items restocked</span>
+            </div>
+            ${isLoggedIn ? `<button onclick="deleteShopLog('${log.id}')" title="Delete Log" class="text-gray-400 hover:text-red-500 text-sm px-1">&times;</button>` : ''}
+          </summary>
+          <div class="divide-y divide-cream-100">${itemRows}</div>
+        `;
+        container.appendChild(box);
+      });
+    }
+
+    function deleteShopLog(id) {
+      if (!isLoggedIn) return;
+      if (confirm("Delete this shopping log entry?")) {
+        shopLogs = shopLogs.filter(l => l.id !== id);
+        saveState();
+        renderShopLogs();
+      }
+    }
+
+    function clearAllShopLogs() {
+      if (!isLoggedIn) return;
+      if (confirm("Clear all historical shopping logs?")) {
+        shopLogs = [];
+        saveState();
+        renderShopLogs();
+      }
+    }
+
+    // PANTRY SECTION
     function renderPantry() {
       const container = document.getElementById('pantry-container');
       const jumpContainer = document.getElementById('pantry-jump-pills');
@@ -2199,7 +2394,6 @@
         box.open = true;
         box.className = 'bg-white rounded-xl border border-cream-200 overflow-hidden';
 
-        // Removed "(Out of Stock)" Text Prompt
         const rows = grouped[cat].map(item => `
           <div class="py-2.5 px-4 flex items-center justify-between text-xs border-b border-cream-100 last:border-none gap-3 hover:bg-cream-50 transition">
             <div onclick="openPantryEditModal('${item.id}')" class="flex-1 min-w-0 cursor-pointer">
@@ -2379,7 +2573,7 @@
 
     // EXPORT & IMPORT
     function exportData() {
-      const payload = JSON.stringify({ recipes, pantry, mealPlans }, null, 2);
+      const payload = JSON.stringify({ recipes, pantry, mealPlans, shopLogs }, null, 2);
       const blob = new Blob([payload], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -2399,10 +2593,12 @@
           if (parsed.recipes) recipes = parsed.recipes;
           if (parsed.pantry) pantry = parsed.pantry;
           if (parsed.mealPlans) mealPlans = parsed.mealPlans;
+          if (parsed.shopLogs) shopLogs = parsed.shopLogs;
           syncPantryWithRecipes();
           saveState();
           renderRecipes();
           renderPlanner();
+          renderShopLogs();
           alert('Kusina backup imported successfully!');
         } catch (err) {
           alert('Invalid JSON file format.');
@@ -2416,6 +2612,7 @@
     updateSyncUI();
     syncPantryWithRecipes();
     fetchPublicMasterData();
+    checkActiveShopSessionBanner();
   </script>
 </body>
 </html>
