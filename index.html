@@ -131,10 +131,12 @@
       <div class="bg-cream-100 p-4 rounded-xl border border-cream-200 space-y-3">
         <div class="flex flex-col sm:flex-row gap-2">
           <!-- Password Manager Autocomplete Fix -->
-          <input type="text" id="recipe-search" autocomplete="off" data-lpignore="true" data-form-type="other" oninput="renderRecipes()" placeholder="🔍 Search by dish name or ingredient..." class="flex-1 px-3 py-2 text-xs rounded-lg border border-cream-300 focus:outline-none focus:ring-1 focus:ring-terracotta bg-white">
+          <input type="search" id="recipe-search" name="recipe_query_search" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="renderRecipes()" placeholder="🔍 Search by dish name or ingredient..." class="flex-1 px-3 py-2 text-xs rounded-lg border border-cream-300 focus:outline-none focus:ring-1 focus:ring-terracotta bg-white">
           <select id="recipe-sort" onchange="handleSortChange(this.value)" class="px-3 py-2 text-xs rounded-lg border border-cream-300 bg-white font-medium text-charcoal">
             <option value="name-asc">Sort: Name (A-Z)</option>
             <option value="name-desc">Sort: Name (Z-A)</option>
+            <option value="cal-high">Sort: Calories (High to Low)</option>
+            <option value="cal-low">Sort: Calories (Low to High)</option>
             <option value="date-newest">Sort: Date Created (Newest)</option>
             <option value="date-oldest">Sort: Date Created (Oldest)</option>
           </select>
@@ -246,7 +248,7 @@
   <!-- Footer -->
   <footer class="mt-auto py-6 border-t border-cream-200 bg-cream-100 text-left px-6 text-xs text-gray-500 font-medium">
     <div>Prompt Coded by ✈️.</div>
-    <div>September 2026. <span onclick="openChangelogModal()" class="text-terracotta font-bold hover:underline cursor-pointer">v19</span></div>
+    <div>September 2026. <span onclick="openChangelogModal()" class="text-terracotta font-bold hover:underline cursor-pointer">v20</span></div>
   </footer>
 
   <!-- MODAL: CHANGELOG -->
@@ -260,22 +262,17 @@
       <div class="p-5 overflow-y-auto space-y-4 custom-scroll text-xs flex-1">
         
         <div class="border-l-2 border-terracotta pl-3 space-y-1">
+          <span class="font-bold text-charcoal">v20 — Impulse Autocomplete, Clean Pantry UI & Sync Fix</span>
+          <p class="text-gray-600">Added category selector & pantry autocomplete to Shop Mode impulse bar, grouped Shop Mode by master categories, removed checkboxes from static Grocery List, cleaned out "(Out of Stock)" text tags, restored Sandwich category, added Sort by Calories, and fixed cross-device Meal Planner cloud sync.</p>
+        </div>
+
+        <div class="border-l-2 border-cream-300 pl-3 space-y-1">
           <span class="font-bold text-charcoal">v19 — Shop Mode, Multi-Tab Cloud Sync & Daily Calorie Summaries</span>
-          <p class="text-gray-600">Introduced interactive Shop Mode with auto-pantry restocking, expanded categories (Snack, Dessert, Breakfast), added icon-only filter bars, persisted sort preference, highlighted ingredient searches, added daily calorie counters to planner views, and synced all tabs (Meal Plan & Pantry) across devices for Admin users.</p>
+          <p class="text-gray-600">Introduced interactive Shop Mode with auto-pantry restocking, expanded categories, icon-only filter bars, persisted sort preference, and synced all tabs across devices for Admin users.</p>
         </div>
 
         <div class="border-l-2 border-cream-300 pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v18 — Async State Protection, Force Delete & Servings Sync</span>
-          <p class="text-gray-600">Prevented blank screens on refresh with local-first async fallback protection, added "Rice" to dish types, enabled force-delete option for duplicate pantry items, and fixed servings display card sync.</p>
-        </div>
-
-        <div class="border-l-2 border-cream-300 pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v17 — Dynamic Stock Deduction, Granular Sync & Smart Aliasing</span>
-          <p class="text-gray-600">Added interactive pantry stock deduction at the end of Cook Mode, fuzzy ingredient matching & aliasing across all 4 tools, non-destructive granular per-recipe Firebase writes, and weight-to-volume unit conversions.</p>
-        </div>
-
-        <div class="border-l-2 border-cream-300 pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v1-v16 — Core Architecture & Feature Expansions</span>
+          <span class="font-bold text-charcoal">v1-v18 — Core Architecture & Feature Expansions</span>
           <p class="text-gray-600">Initial releases featuring Recipe Manager, Pantry Inventory, Calorie Calculator, Dynamic Autocomplete, Grocery Aggregation, and Focus Cook View.</p>
         </div>
 
@@ -302,8 +299,12 @@
       </button>
     </div>
 
-    <div class="bg-cream-100/80 p-3 border-b border-cream-200 flex flex-wrap gap-2 items-center flex-shrink-0">
-      <input type="text" id="shop-impulse-name" placeholder="+ Add Impulse Item (e.g. Snacks)..." class="flex-1 min-w-[150px] px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+    <!-- Enhanced Impulse Bar with Category & Autocomplete -->
+    <div class="bg-cream-100/80 p-3 border-b border-cream-200 flex flex-wrap gap-2 items-center flex-shrink-0 relative">
+      <div class="flex-1 min-w-[150px] relative">
+        <input type="text" id="shop-impulse-name" autocomplete="off" placeholder="+ Add Impulse Item (e.g. Snacks)..." oninput="handleImpulseAutocomplete(this)" onblur="hideImpulseAutocomplete(this)" class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+        <div id="shop-impulse-suggestions" class="absolute left-0 right-0 top-full mt-1 bg-white border border-cream-300 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto hidden"></div>
+      </div>
       <input type="number" id="shop-impulse-qty" placeholder="Qty" step="0.1" value="1" class="w-16 px-2 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
       <select id="shop-impulse-unit" class="w-20 px-1 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
         <option value="pcs">pcs</option>
@@ -312,12 +313,13 @@
         <option value="tbsp">tbsp</option>
         <option value="cup">cup</option>
       </select>
+      <select id="shop-impulse-cat" class="w-32 px-1.5 py-1.5 text-xs rounded-lg border border-cream-300 bg-white"></select>
       <button onclick="addImpulseShopItem()" class="bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
         + Add Item
       </button>
     </div>
 
-    <div id="shop-items-container" class="flex-1 overflow-y-auto p-5 max-w-2xl mx-auto w-full space-y-4 custom-scroll"></div>
+    <div id="shop-items-container" class="flex-1 overflow-y-auto p-5 max-w-2xl mx-auto w-full space-y-5 custom-scroll"></div>
 
     <div class="p-4 bg-cream-100 border-t border-cream-200 flex items-center justify-between flex-shrink-0 flex-wrap gap-2">
       <button onclick="closeShopMode()" class="px-3 py-2 bg-cream-200 text-charcoal text-xs font-bold rounded-xl transition">
@@ -451,9 +453,10 @@
               <option value="🥗 Vegetable">🥗 Vegetable</option>
               <option value="🍝 Pasta">🍝 Pasta</option>
               <option value="🍚 Rice">🍚 Rice</option>
-              <option value="🥪 Snack">🥪 Snack</option>
+              <option value="🥪 Sandwich">🥪 Sandwich</option>
+              <option value="🍿 Snack">🍿 Snack</option>
               <option value="🍨 Dessert">🍨 Dessert</option>
-              <option value="🍳 Breakfast">🍳 Breakfast</option>
+              <option value="🥞 Breakfast">🥞 Breakfast</option>
               <option value="🍲 Soup / Stew">🍲 Soup / Stew</option>
             </select>
           </div>
@@ -509,7 +512,7 @@
       <div class="border-t border-cream-200 pt-2 space-y-2">
         <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-500">Add Dish to Day</label>
         <div class="flex gap-1.5">
-          <input type="text" id="assign-search" autocomplete="off" oninput="renderAssignRecipeList()" placeholder="🔍 Search dishes..." class="flex-1 px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+          <input type="search" id="assign-search" autocomplete="off" oninput="renderAssignRecipeList()" placeholder="🔍 Search dishes..." class="flex-1 px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
           <select id="assign-sort" onchange="renderAssignRecipeList()" class="px-2 py-1.5 text-xs rounded-lg border border-cream-300 bg-white font-medium text-charcoal">
             <option value="name-asc">A-Z</option>
             <option value="name-desc">Z-A</option>
@@ -537,7 +540,7 @@
       </div>
 
       <div class="space-y-2">
-        <input type="text" id="inspector-search" autocomplete="off" oninput="filterInspectorRecipes()" placeholder="🔍 Filter dishes using this ingredient..." class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+        <input type="search" id="inspector-search" autocomplete="off" oninput="filterInspectorRecipes()" placeholder="🔍 Filter dishes using this ingredient..." class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
         <div id="inspector-type-filters" class="flex flex-wrap gap-1"></div>
       </div>
 
@@ -663,9 +666,10 @@
       "🥗 Vegetable": "🥗",
       "🍝 Pasta": "🍝",
       "🍚 Rice": "🍚",
-      "🥪 Snack": "🥪",
+      "🥪 Sandwich": "🥪",
+      "🍿 Snack": "🍿",
       "🍨 Dessert": "🍨",
-      "🍳 Breakfast": "🍳",
+      "🥞 Breakfast": "🥞",
       "🍲 Soup / Stew": "🍲"
     };
 
@@ -794,7 +798,7 @@
       }
     }
 
-    // Multi-Tab Cloud Sync (Recipes, Meal Plans & Pantry)
+    // Fixed Multi-Tab Cloud Sync (Meal Plans Object Sanitization)
     async function syncTabToCloud(tabKey, dataObj) {
       if (!isLoggedIn) return;
       try {
@@ -859,12 +863,15 @@
         const resPlan = await fetch(`${FIREBASE_DB_URL}mealPlans.json`);
         if (resPlan.ok) {
           const dataPlan = await resPlan.json();
-          if (dataPlan) mealPlans = dataPlan;
+          if (dataPlan) {
+            mealPlans = typeof dataPlan === 'object' ? dataPlan : {};
+          }
         }
 
         saveState();
         syncPantryWithRecipes();
         renderRecipes();
+        renderPlanner();
       } catch (e) {
         console.warn("Using offline/cached local state:", e);
       }
@@ -888,6 +895,7 @@
         closeLoginModal();
         await fetchPublicMasterData();
         renderRecipes();
+        renderPlanner();
         alert("Admin Mode active! Live cloud sync enabled for all tabs.");
       } else {
         alert("Incorrect password.");
@@ -995,9 +1003,11 @@
     function initCategorySelects() {
       const pCat = document.getElementById('pantry-cat-input');
       const editCat = document.getElementById('edit-pantry-cat');
+      const shopImpCat = document.getElementById('shop-impulse-cat');
       const catHtml = categories.map(c => `<option value="${c}">${c}</option>`).join('');
       pCat.innerHTML = catHtml;
       editCat.innerHTML = catHtml;
+      if (shopImpCat) shopImpCat.innerHTML = catHtml;
     }
 
     function handleSortChange(val) {
@@ -1044,7 +1054,7 @@
       document.getElementById('form-recipe-calories').value = Math.round(total) || 500;
     }
 
-    // RECIPES VIEW
+    // RECIPES VIEW & CALORIES SORTING
     function renderRecipes() {
       const grid = document.getElementById('recipe-grid');
       const search = document.getElementById('recipe-search').value.toLowerCase().trim();
@@ -1053,7 +1063,6 @@
       sortSelect.value = savedSortPreference;
       const sort = sortSelect.value;
 
-      // Render Icon-Only Filter Bar
       const filterBox = document.getElementById('recipe-type-filters');
       filterBox.innerHTML = dishTypes.map(t => `
         <button onclick="setRecipeFilter('${t}')" title="${t}" class="px-2.5 py-1 rounded-lg border transition text-xs font-bold ${selectedTypeFilter === t ? 'bg-terracotta text-white border-terracotta' : 'bg-white text-gray-600 border-cream-300 hover:bg-cream-200'}">
@@ -1070,6 +1079,8 @@
       filtered.sort((a, b) => {
         if (sort === 'name-asc') return a.name.localeCompare(b.name);
         if (sort === 'name-desc') return b.name.localeCompare(a.name);
+        if (sort === 'cal-high') return (b.calories || 0) - (a.calories || 0);
+        if (sort === 'cal-low') return (a.calories || 0) - (b.calories || 0);
         if (sort === 'date-newest') return (b.createdAt || 0) - (a.createdAt || 0);
         if (sort === 'date-oldest') return (a.createdAt || 0) - (b.createdAt || 0);
       });
@@ -1087,7 +1098,6 @@
           if (!e.target.closest('button')) openPreviewModal(r.id);
         };
 
-        // Ingredient Search Highlighting
         const ingTags = r.ingredients ? r.ingredients.map(i => {
           const isMatch = search.length > 1 && i.name.toLowerCase().includes(search);
           const tagClass = isMatch 
@@ -1549,8 +1559,9 @@
       document.getElementById('cook-mode-modal').classList.add('hidden');
     }
 
-    // MEAL PLANNER & DAILY CALORIES
+    // MEAL PLANNER
     function getMealPlanListForDate(dateKey) {
+      if (!mealPlans) return [];
       const raw = mealPlans[dateKey];
       if (!raw) return [];
       if (Array.isArray(raw)) return raw;
@@ -1739,7 +1750,6 @@
         return matchesType && matchesSearch;
       });
 
-      // Default Alphabetical Sort for Assign Modal
       filtered.sort((a, b) => {
         if (sort === 'name-asc') return a.name.localeCompare(b.name);
         if (sort === 'name-desc') return b.name.localeCompare(a.name);
@@ -1798,7 +1808,7 @@
       }
     }
 
-    // GROCERY LIST & SHOP MODE
+    // GROCERY LIST (STATIC PREVIEW WITHOUT CHECKBOXES)
     function generateGroceryList() {
       const startStr = document.getElementById('grocery-start-date').value;
       const endStr = document.getElementById('grocery-end-date').value;
@@ -1892,21 +1902,18 @@
         catBox.open = true;
         catBox.className = 'bg-cream-50 rounded-xl border border-cream-200 overflow-hidden';
         
+        // Clean List without Checkboxes in Main Tab View
         const listHtml = grouped[cat].map(item => {
           const itemKeyStr = makeKey(item.name);
           const pantryMatch = pantry.find(p => makeKey(p.name) === itemKeyStr && (p.unit || '').toLowerCase().trim() === item.unit.toLowerCase());
           const inPantry = pantryMatch ? Number(pantryMatch.qty) : 0;
           const toBuy = Math.max(0, item.qty - inPantry);
-          const isCovered = inPantry >= item.qty;
 
           return `
             <div class="py-2.5 px-4 flex items-center justify-between hover:bg-cream-100 transition border-b border-cream-100 last:border-none text-xs">
-              <div class="flex items-center space-x-2">
-                <input type="checkbox" ${isCovered ? 'checked' : ''} onchange="toggleGroceryCheck(this)" class="w-4 h-4 accent-terracotta rounded cursor-pointer">
-                <span onclick="inspectIngredient('${item.key}')" class="item-label font-medium cursor-pointer hover:underline ${isCovered ? 'line-through text-gray-400' : 'text-charcoal'}">
-                  ${item.name} 🔍
-                </span>
-              </div>
+              <span onclick="inspectIngredient('${item.key}')" class="font-medium cursor-pointer hover:underline text-charcoal">
+                ${item.name} 🔍
+              </span>
               <div class="text-right">
                 <span class="font-bold text-terracotta">${toBuy} ${item.unit || ''}</span>
                 ${inPantry > 0 ? `<p class="text-[10px] text-sage font-semibold">Pantry: ${inPantry} / ${item.qty} needed</p>` : ''}
@@ -1924,17 +1931,6 @@
         `;
         container.appendChild(catBox);
       });
-    }
-
-    function toggleGroceryCheck(cb) {
-      const label = cb.parentElement.querySelector('.item-label');
-      if (cb.checked) {
-        label.classList.add('line-through', 'text-gray-400');
-        label.classList.remove('text-charcoal');
-      } else {
-        label.classList.remove('line-through', 'text-gray-400');
-        label.classList.add('text-charcoal');
-      }
     }
 
     function inspectIngredient(key) {
@@ -1965,12 +1961,14 @@
       document.getElementById('inspector-modal').classList.remove('hidden');
     }
 
-    // SHOP MODE & PANTRY RESTOCKING
+    // SHOP MODE (CATEGORIZED, ALPHABETIZED, WITH IMPULSE AUTOCOMPLETE)
     function startShopMode() {
       const items = Object.values(currentGroceryUsageMap);
       if (items.length === 0) {
         return alert("Please generate a grocery list first before entering Shop Mode!");
       }
+
+      initCategorySelects();
 
       activeShopItems = items.map(i => {
         const itemKeyStr = makeKey(i.name);
@@ -1983,7 +1981,7 @@
           name: i.name,
           qty: toBuy > 0 ? toBuy : i.qty,
           unit: i.unit,
-          category: i.category,
+          category: i.category || '🧂 Pantry Staples',
           purchased: false
         };
       });
@@ -1992,55 +1990,50 @@
       document.getElementById('shop-mode-modal').classList.remove('hidden');
     }
 
-    function renderShopModeItems() {
-      const container = document.getElementById('shop-items-container');
-      container.innerHTML = '';
+    function handleImpulseAutocomplete(input) {
+      const query = input.value.trim().toLowerCase();
+      const suggestionsBox = document.getElementById('shop-impulse-suggestions');
+      
+      if (!query) {
+        suggestionsBox.classList.add('hidden');
+        return;
+      }
 
-      let purchasedCount = 0;
-      activeShopItems.forEach((item, idx) => {
-        if (item.purchased) purchasedCount++;
+      const matches = pantry.filter(p => p.name.toLowerCase().includes(query) || makeKey(p.name).includes(makeKey(query)));
+      if (matches.length === 0) {
+        suggestionsBox.classList.add('hidden');
+        return;
+      }
 
-        const div = document.createElement('div');
-        div.className = `p-3 rounded-xl border transition flex items-center justify-between gap-3 ${item.purchased ? 'bg-cream-100/60 border-cream-200 opacity-60' : 'bg-white border-cream-200 shadow-sm'}`;
-        div.innerHTML = `
-          <div class="flex items-center space-x-3 flex-1 min-w-0">
-            <input type="checkbox" ${item.purchased ? 'checked' : ''} onchange="toggleShopItemPurchased(${idx})" class="w-5 h-5 accent-sage rounded cursor-pointer flex-shrink-0">
-            <div class="truncate">
-              <p class="font-bold text-xs text-charcoal truncate ${item.purchased ? 'line-through text-gray-400' : ''}">${item.name}</p>
-              <span class="text-[9px] text-gray-400 font-semibold">${item.category}</span>
-            </div>
-          </div>
-          
-          <div class="flex items-center space-x-1.5 flex-shrink-0">
-            <input type="number" step="0.1" value="${item.qty}" onchange="updateShopItemQty(${idx}, this.value)" class="w-16 px-1.5 py-1 text-xs border border-cream-300 rounded text-center font-bold text-terracotta bg-white">
-            <span class="text-xs font-semibold text-sage bg-sage-light px-2 py-1 rounded">${item.unit}</span>
-            <button onclick="removeShopItem(${idx})" class="text-gray-400 hover:text-red-500 text-sm px-1">&times;</button>
-          </div>
-        `;
-        container.appendChild(div);
-      });
+      suggestionsBox.innerHTML = matches.map(p => `
+        <div onmousedown="selectImpulseSuggestion('${p.name.replace(/'/g, "\\'")}', '${p.unit}', '${p.category}')" class="px-3 py-1.5 hover:bg-cream-100 cursor-pointer text-xs flex justify-between items-center">
+          <span class="font-medium text-charcoal">${p.name}</span>
+          <span class="text-[10px] text-gray-400">${p.category} • ${p.unit}</span>
+        </div>
+      `).join('');
 
-      document.getElementById('shop-items-summary').textContent = `${purchasedCount} / ${activeShopItems.length} items in cart`;
+      suggestionsBox.classList.remove('hidden');
     }
 
-    function toggleShopItemPurchased(idx) {
-      activeShopItems[idx].purchased = !activeShopItems[idx].purchased;
-      renderShopModeItems();
+    function selectImpulseSuggestion(name, unit, category) {
+      document.getElementById('shop-impulse-name').value = name;
+      document.getElementById('shop-impulse-unit').value = unit || 'pcs';
+      document.getElementById('shop-impulse-cat').value = category || '📦 Other';
+      document.getElementById('shop-impulse-suggestions').classList.add('hidden');
     }
 
-    function updateShopItemQty(idx, val) {
-      activeShopItems[idx].qty = Math.max(0, parseFloat(val) || 0);
-    }
-
-    function removeShopItem(idx) {
-      activeShopItems.splice(idx, 1);
-      renderShopModeItems();
+    function hideImpulseAutocomplete() {
+      setTimeout(() => {
+        const box = document.getElementById('shop-impulse-suggestions');
+        if (box) box.classList.add('hidden');
+      }, 200);
     }
 
     function addImpulseShopItem() {
       const name = document.getElementById('shop-impulse-name').value.trim();
       const qty = parseFloat(document.getElementById('shop-impulse-qty').value) || 1;
       const unit = document.getElementById('shop-impulse-unit').value;
+      const category = document.getElementById('shop-impulse-cat').value;
 
       if (!name) return;
 
@@ -2049,12 +2042,85 @@
         name,
         qty,
         unit,
-        category: '📦 Other',
+        category,
         purchased: true
       });
 
       document.getElementById('shop-impulse-name').value = '';
       renderShopModeItems();
+    }
+
+    function renderShopModeItems() {
+      const container = document.getElementById('shop-items-container');
+      container.innerHTML = '';
+
+      let purchasedCount = 0;
+      activeShopItems.forEach(i => { if (i.purchased) purchasedCount++; });
+
+      const grouped = {};
+      activeShopItems.forEach(item => {
+        if (!grouped[item.category]) grouped[item.category] = [];
+        grouped[item.category].push(item);
+      });
+
+      categories.forEach(cat => {
+        if (!grouped[cat]) return;
+
+        grouped[cat].sort((a, b) => a.name.localeCompare(b.name));
+
+        const catBox = document.createElement('div');
+        catBox.className = 'bg-white rounded-xl border border-cream-200 overflow-hidden shadow-sm';
+
+        const listHtml = grouped[cat].map(item => {
+          const globalIdx = activeShopItems.findIndex(x => x.id === item.id);
+
+          return `
+            <div class="p-3 border-b border-cream-100 last:border-none flex items-center justify-between gap-3 ${item.purchased ? 'bg-cream-100/50 opacity-60' : ''}">
+              <div class="flex items-center space-x-3 flex-1 min-w-0">
+                <input type="checkbox" ${item.purchased ? 'checked' : ''} onchange="toggleShopItemPurchased(${globalIdx})" class="w-5 h-5 accent-sage rounded cursor-pointer flex-shrink-0">
+                <span class="font-bold text-xs text-charcoal truncate ${item.purchased ? 'line-through text-gray-400' : ''}">${item.name}</span>
+              </div>
+              
+              <div class="flex items-center space-x-1.5 flex-shrink-0">
+                <input type="number" step="0.1" value="${item.qty}" onchange="updateShopItemQty(${globalIdx}, this.value)" class="w-16 px-1.5 py-1 text-xs border border-cream-300 rounded text-center font-bold text-terracotta bg-white">
+                <span class="text-xs font-semibold text-sage bg-sage-light px-2 py-1 rounded min-w-[36px] text-center">${item.unit}</span>
+                <button onclick="removeShopItem(${globalIdx})" class="text-gray-400 hover:text-red-500 text-sm p-1">&times;</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        catBox.innerHTML = `
+          <div class="px-4 py-2 bg-cream-100 font-bold text-xs text-charcoal flex justify-between items-center border-b border-cream-200">
+            <span>${cat}</span>
+            <span class="text-[10px] text-gray-400 font-normal">${grouped[cat].length} items</span>
+          </div>
+          <div class="divide-y divide-cream-100">${listHtml}</div>
+        `;
+        container.appendChild(catBox);
+      });
+
+      document.getElementById('shop-items-summary').textContent = `${purchasedCount} / ${activeShopItems.length} items in cart`;
+    }
+
+    function toggleShopItemPurchased(idx) {
+      if (activeShopItems[idx]) {
+        activeShopItems[idx].purchased = !activeShopItems[idx].purchased;
+        renderShopModeItems();
+      }
+    }
+
+    function updateShopItemQty(idx, val) {
+      if (activeShopItems[idx]) {
+        activeShopItems[idx].qty = Math.max(0, parseFloat(val) || 0);
+      }
+    }
+
+    function removeShopItem(idx) {
+      if (activeShopItems[idx]) {
+        activeShopItems.splice(idx, 1);
+        renderShopModeItems();
+      }
     }
 
     function confirmAndRestockPantry() {
@@ -2096,7 +2162,7 @@
       document.getElementById('shop-mode-modal').classList.add('hidden');
     }
 
-    // PANTRY SECTION
+    // PANTRY SECTION (CLEANED OUT "OUT OF STOCK" TEXT)
     function renderPantry() {
       const container = document.getElementById('pantry-container');
       const jumpContainer = document.getElementById('pantry-jump-pills');
@@ -2133,11 +2199,12 @@
         box.open = true;
         box.className = 'bg-white rounded-xl border border-cream-200 overflow-hidden';
 
+        // Removed "(Out of Stock)" Text Prompt
         const rows = grouped[cat].map(item => `
           <div class="py-2.5 px-4 flex items-center justify-between text-xs border-b border-cream-100 last:border-none gap-3 hover:bg-cream-50 transition">
             <div onclick="openPantryEditModal('${item.id}')" class="flex-1 min-w-0 cursor-pointer">
-              <p class="font-medium text-charcoal text-xs truncate ${item.qty === 0 ? 'text-gray-400 italic' : ''}">
-                ${item.name} ${item.qty === 0 ? '(Out of Stock)' : ''}
+              <p class="font-medium text-xs truncate ${item.qty === 0 ? 'text-gray-400 italic' : 'text-charcoal'}">
+                ${item.name}
               </p>
             </div>
             
@@ -2267,7 +2334,6 @@
       document.getElementById('inspector-modal').classList.remove('hidden');
     }
 
-    // Inspector displaying required quantity per recipe
     function filterInspectorRecipes() {
       const search = document.getElementById('inspector-search').value.toLowerCase().trim();
       const filterBox = document.getElementById('inspector-type-filters');
@@ -2336,6 +2402,7 @@
           syncPantryWithRecipes();
           saveState();
           renderRecipes();
+          renderPlanner();
           alert('Kusina backup imported successfully!');
         } catch (err) {
           alert('Invalid JSON file format.');
