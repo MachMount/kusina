@@ -57,15 +57,15 @@
 </head>
 <body class="font-sans min-h-screen flex flex-col antialiased selection:bg-terracotta selection:text-white">
 
-  <!-- Floating Undo Restock Banner -->
-  <div id="undo-restock-banner" class="fixed bottom-5 right-5 z-50 bg-charcoal text-white p-4 rounded-2xl shadow-2xl flex items-center space-x-3 hidden animate-bounce">
+  <!-- Floating Centered Undo Banner -->
+  <div id="undo-restock-banner" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-charcoal text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3 hidden animate-bounce max-w-sm w-11/12">
     <span class="text-xl">⚠️</span>
-    <div class="text-xs">
+    <div class="text-xs flex-1">
       <p class="font-bold" id="undo-banner-title">Pantry Stock Deducted!</p>
-      <p class="text-[10px] text-gray-300">Made a mistake or testing?</p>
+      <p class="text-[10px] text-gray-300">Tap to revert changes.</p>
     </div>
-    <button onclick="undoLastStockDeduction()" class="bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
-      ↺ Undo Changes
+    <button onclick="undoLastAction()" class="bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold px-3 py-1.5 rounded-lg transition whitespace-nowrap">
+      ↺ Undo
     </button>
   </div>
 
@@ -144,7 +144,6 @@
           </select>
         </div>
         
-        <!-- Icon Filter Bar -->
         <div id="recipe-type-filters" class="flex flex-wrap gap-1 pt-1"></div>
       </div>
 
@@ -156,7 +155,7 @@
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 class="font-serif text-2xl font-bold text-charcoal">Meal Planner</h2>
-          <p class="text-xs text-gray-600">Assign multiple dishes per day with Monday-start week layouts.</p>
+          <p class="text-xs text-gray-600">Assign multiple dishes per day with re-ordering and calorie tracking.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <div class="bg-cream-200 p-0.5 rounded-lg flex text-xs font-semibold">
@@ -176,8 +175,21 @@
 
     <!-- 3. GROCERY LIST TAB -->
     <section id="view-grocery" class="space-y-5 hidden">
-      <!-- Active Shop Session Banner -->
-      <div id="active-shop-banner" class="bg-sage-light border border-sage text-charcoal p-3.5 rounded-xl flex items-center justify-between hidden shadow-sm">
+      <div class="bg-cream-100 p-4 rounded-xl border border-cream-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="font-serif text-xl font-bold text-charcoal">Smart Grocery Aggregator</h2>
+          <p class="text-xs text-gray-600">Auto-converts measurements and cross-references active pantry stock.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="text-xs font-semibold text-gray-600">From:</label>
+          <input type="date" id="grocery-start-date" onchange="generateGroceryList()" class="px-2 py-1 text-xs border border-cream-300 rounded-md bg-white">
+          <label class="text-xs font-semibold text-gray-600">To:</label>
+          <input type="date" id="grocery-end-date" onchange="generateGroceryList()" class="px-2 py-1 text-xs border border-cream-300 rounded-md bg-white">
+        </div>
+      </div>
+
+      <!-- Active Shop Session Banner (Positioned Below Date Box) -->
+      <div id="active-shop-banner" class="bg-sage-light border border-sage text-charcoal p-3.5 rounded-xl flex items-center justify-between hidden shadow-sm flex-wrap gap-2">
         <div class="flex items-center space-x-2">
           <span class="text-xl">🛒</span>
           <div>
@@ -185,21 +197,13 @@
             <p class="text-[10px] text-gray-600">You have a paused shopping trip in progress.</p>
           </div>
         </div>
-        <button onclick="resumeShopMode()" class="bg-sage hover:opacity-90 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-sm transition">
-          Resume Shop Session 🛍️
-        </button>
-      </div>
-
-      <div class="bg-cream-100 p-4 rounded-xl border border-cream-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 class="font-serif text-xl font-bold text-charcoal">Smart Grocery Aggregator</h2>
-          <p class="text-xs text-gray-600">Auto-converts measurements and automatically updates when dates change.</p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <label class="text-xs font-semibold text-gray-600">From:</label>
-          <input type="date" id="grocery-start-date" onchange="generateGroceryList()" class="px-2 py-1 text-xs border border-cream-300 rounded-md bg-white">
-          <label class="text-xs font-semibold text-gray-600">To:</label>
-          <input type="date" id="grocery-end-date" onchange="generateGroceryList()" class="px-2 py-1 text-xs border border-cream-300 rounded-md bg-white">
+        <div class="flex items-center space-x-2">
+          <button onclick="resumeShopMode()" class="bg-sage hover:opacity-90 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-sm transition">
+            Resume Shop Session 🛍️
+          </button>
+          <button onclick="stopAndDiscardShopSession()" class="bg-cream-200 hover:bg-cream-300 text-charcoal font-bold text-xs px-3 py-1.5 rounded-lg transition" title="Cancel Session">
+            ⏹️ Cancel Session
+          </button>
         </div>
       </div>
 
@@ -225,7 +229,7 @@
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 class="font-serif text-2xl font-bold text-charcoal">Pantry Inventory</h2>
-          <p class="text-xs text-gray-600">Tap any ingredient to adjust stock or recategorize it.</p>
+          <p class="text-xs text-gray-600">Tap any ingredient to edit details or use 0️⃣ to quick-zero stock.</p>
         </div>
         <button onclick="cleanupPantryDuplicates()" class="bg-cream-100 hover:bg-cream-200 text-charcoal text-xs font-semibold px-3 py-2 rounded-lg border border-cream-300 transition self-start sm:self-auto">
           🧹 Merge Duplicates
@@ -260,8 +264,8 @@
     <section id="view-shoplog" class="space-y-5 hidden">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 class="font-serif text-2xl font-bold text-charcoal">Shop Log</h2>
-          <p class="text-xs text-gray-600">History of completed shopping trips and restocked pantry logs.</p>
+          <h2 class="font-serif text-2xl font-bold text-charcoal">Shop Log & Price Tracker</h2>
+          <p class="text-xs text-gray-600">Review past shopping trips and tap items to record actual prices paid (PHP ₱).</p>
         </div>
         <button onclick="clearAllShopLogs()" class="admin-only hidden bg-cream-100 hover:bg-cream-200 text-charcoal text-xs font-semibold px-3 py-2 rounded-lg border border-cream-300 transition self-start sm:self-auto">
           🗑️ Clear All Logs
@@ -276,7 +280,7 @@
   <!-- Footer -->
   <footer class="mt-auto py-6 border-t border-cream-200 bg-cream-100 text-left px-6 text-xs text-gray-500 font-medium">
     <div>Prompt Coded by ✈️.</div>
-    <div>September 2026. <span onclick="openChangelogModal()" class="text-terracotta font-bold hover:underline cursor-pointer">v21</span></div>
+    <div>September 2026. <span onclick="openChangelogModal()" class="text-terracotta font-bold hover:underline cursor-pointer">v22</span></div>
   </footer>
 
   <!-- MODAL: CHANGELOG -->
@@ -289,17 +293,17 @@
       
       <div class="p-5 overflow-y-auto space-y-4 custom-scroll text-xs flex-1">
         <div class="border-l-2 border-terracotta pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v21 — Shop Log, Pausable Shop Sessions & Monday Calendars</span>
-          <p class="text-gray-600">Introduced the Shop Log tab for trip tracking, added a Pause & Resume session button to Shop Mode, switched calendars to Monday-start, auto-updated grocery dates when navigating views, and resolved cross-device Meal Planner sync.</p>
+          <span class="font-bold text-charcoal">v22 — Price Tracker, Top-Aligned Planner & Centered Banner</span>
+          <p class="text-gray-600">Added actual item price logging in Shop Log, top-aligned the meal assign modal for mobile keyboards, added dish re-ordering controls, centered the undo banner, and overhauled Realtime Database cloud sync for desktop/mobile parity.</p>
         </div>
 
         <div class="border-l-2 border-cream-300 pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v20 — Impulse Autocomplete & Clean Pantry UI</span>
-          <p class="text-gray-600">Added category selector & pantry autocomplete to Shop Mode impulse bar, grouped Shop Mode by master categories, removed checkboxes from static Grocery List, and cleaned out "(Out of Stock)" text tags.</p>
+          <span class="font-bold text-charcoal">v21 — Pausable Shop Sessions & Monday Calendars</span>
+          <p class="text-gray-600">Introduced the Shop Log tab, added Pause & Resume session controls to Shop Mode, switched calendars to Monday-start, and auto-updated grocery dates when navigating views.</p>
         </div>
 
         <div class="border-l-2 border-cream-300 pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v1-v19 — Core Architecture & Feature Expansions</span>
+          <span class="font-bold text-charcoal">v1-v20 — Core Architecture & Feature Expansions</span>
           <p class="text-gray-600">Initial releases featuring Recipe Manager, Pantry Inventory, Calorie Calculator, Dynamic Autocomplete, Grocery Aggregation, and Focus Cook View.</p>
         </div>
       </div>
@@ -324,8 +328,8 @@
         <button onclick="pauseShopSession()" class="px-3 py-1.5 bg-cream-200 hover:bg-cream-300 text-charcoal font-bold text-xs rounded-lg transition flex items-center space-x-1">
           <span>⏸️</span> <span>Pause Session</span>
         </button>
-        <button onclick="closeShopMode()" class="px-3 py-1.5 bg-cream-200 hover:bg-cream-300 text-gray-500 hover:text-charcoal font-bold text-xs rounded-lg transition">
-          ✕ Exit
+        <button onclick="stopAndDiscardShopSession()" class="px-3 py-1.5 bg-cream-200 hover:bg-cream-300 text-red-600 font-bold text-xs rounded-lg transition">
+          ⏹️ Stop Session
         </button>
       </div>
     </div>
@@ -348,7 +352,7 @@
       <button onclick="addImpulseShopItem()" class="bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
         + Add Item
       </button>
-      <button onclick="clearImpulseInputs()" class="bg-cream-200 hover:bg-cream-300 text-charcoal text-xs font-semibold px-2.5 py-1.5 rounded-lg transition" title="Clear Impulse Inputs">
+      <button onclick="clearImpulseInputs()" class="bg-cream-200 hover:bg-cream-300 text-charcoal text-xs font-semibold px-2.5 py-1.5 rounded-lg transition" title="Clear Inputs">
         🧹 Clear
       </button>
     </div>
@@ -356,8 +360,8 @@
     <div id="shop-items-container" class="flex-1 overflow-y-auto p-5 max-w-2xl mx-auto w-full space-y-5 custom-scroll"></div>
 
     <div class="p-4 bg-cream-100 border-t border-cream-200 flex items-center justify-between flex-shrink-0 flex-wrap gap-2">
-      <button onclick="closeShopMode()" class="px-3 py-2 bg-cream-200 text-charcoal text-xs font-bold rounded-xl transition">
-        Exit (Keep Pantry Unchanged)
+      <button onclick="pauseShopSession()" class="px-3 py-2 bg-cream-200 text-charcoal text-xs font-bold rounded-xl transition">
+        Pause & Exit
       </button>
       <button onclick="confirmAndRestockPantry()" class="px-4 py-2 bg-sage hover:opacity-90 text-white text-xs font-bold rounded-xl shadow-sm transition">
         Done & Restock Pantry Stock 📦
@@ -383,7 +387,7 @@
     </div>
   </div>
 
-  <!-- MODAL: EDIT PANTRY ITEM -->
+  <!-- MODAL: EDIT PANTRY ITEM (WITH DELETE BUTTON) -->
   <div id="pantry-edit-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-cream-50 rounded-2xl max-w-sm w-full p-5 shadow-xl border border-cream-200 space-y-4">
       <div class="flex items-center justify-between border-b border-cream-200 pb-2">
@@ -428,7 +432,7 @@
       </div>
 
       <div class="flex justify-between items-center pt-2 border-t border-cream-200">
-        <button onclick="openPantryIngredientInspector(document.getElementById('edit-pantry-name').value)" class="text-xs text-terracotta font-semibold hover:underline">🔍 Inspect Recipes</button>
+        <button onclick="deletePantryItemFromModal()" class="text-xs text-red-600 font-bold hover:underline">🗑️ Delete Item</button>
         <div class="flex space-x-2">
           <button onclick="closePantryEditModal()" class="px-3 py-1.5 text-xs text-gray-600 bg-cream-200 rounded-md font-medium">Cancel</button>
           <button onclick="savePantryItemEdit()" class="px-4 py-1.5 text-xs bg-terracotta text-white rounded-md font-bold shadow-sm hover:bg-terracotta-hover">Save Changes</button>
@@ -527,9 +531,9 @@
     </div>
   </div>
 
-  <!-- MODAL 2: ASSIGN MULTIPLE DISHES TO MEAL PLAN -->
-  <div id="assign-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-cream-50 rounded-2xl max-w-md w-full p-5 shadow-xl border border-cream-200 space-y-3">
+  <!-- MODAL 2: ASSIGN DISHES TO MEAL PLAN (TOP ALIGNED FOR KEYBOARD) -->
+  <div id="assign-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-6 sm:pt-12 hidden overflow-y-auto">
+    <div class="bg-cream-50 rounded-2xl max-w-md w-full p-5 shadow-xl border border-cream-200 space-y-3 my-auto sm:my-0">
       <div class="flex items-center justify-between border-b border-cream-200 pb-2">
         <div>
           <h3 id="assign-modal-date" class="font-serif font-bold text-charcoal text-sm">Meals for Date</h3>
@@ -540,7 +544,7 @@
       
       <div>
         <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Scheduled Dishes for Day</label>
-        <div id="current-assigned-list" class="space-y-1.5 max-h-32 overflow-y-auto custom-scroll"></div>
+        <div id="current-assigned-list" class="space-y-1.5 max-h-36 overflow-y-auto custom-scroll"></div>
       </div>
 
       <div class="border-t border-cream-200 pt-2 space-y-2">
@@ -834,7 +838,7 @@
       }
     }
 
-    // Sanitized Cloud Sync Engine (Guarantees Object Structure for Dates)
+    // Overhauled Sync Engine (Guarantees Meal Planner & Tab Parity Across Mobile/Desktop)
     async function syncTabToCloud(tabKey, dataObj) {
       if (!isLoggedIn) return;
       try {
@@ -842,7 +846,9 @@
         if (tabKey === 'mealPlans') {
           payload = {};
           Object.keys(dataObj).forEach(d => {
-            payload[d] = { dishes: Array.isArray(dataObj[d]) ? dataObj[d] : [dataObj[d]] };
+            if (dataObj[d] && Array.isArray(dataObj[d]) && dataObj[d].length > 0) {
+              payload[d] = { dishes: dataObj[d] };
+            }
           });
         }
         await fetch(`${FIREBASE_DB_URL}${tabKey}.json`, {
@@ -1609,14 +1615,14 @@
       setTimeout(() => banner.classList.add('hidden'), 10000);
     }
 
-    function undoLastStockDeduction() {
+    function undoLastAction() {
       if (previousPantrySnapshot) {
         pantry = JSON.parse(JSON.stringify(previousPantrySnapshot));
         previousPantrySnapshot = null;
         saveState();
         renderPantry();
         document.getElementById('undo-restock-banner').classList.add('hidden');
-        alert("Pantry inventory state restored successfully!");
+        alert("Pantry inventory state restored!");
       }
     }
 
@@ -1630,7 +1636,7 @@
       document.getElementById('cook-mode-modal').classList.add('hidden');
     }
 
-    // MEAL PLANNER (MONDAY-START & DYNAMIC GROCERY DATES)
+    // MEAL PLANNER (WITH DISH RE-ORDERING)
     function getMonday(d) {
       const date = new Date(d);
       const day = date.getDay();
@@ -1657,6 +1663,22 @@
         }
       });
       return totalCals;
+    }
+
+    function reorderDayDish(dateKey, idx, dir) {
+      const list = getMealPlanListForDate(dateKey);
+      if (idx + dir < 0 || idx + dir >= list.length) return;
+
+      const temp = list[idx];
+      list[idx] = list[idx + dir];
+      list[idx + dir] = temp;
+
+      mealPlans[dateKey] = list;
+      saveState();
+      renderPlanner();
+      if (!document.getElementById('assign-modal').classList.contains('hidden')) {
+        renderCurrentAssignedList();
+      }
     }
 
     function setPlannerView(mode) {
@@ -1694,7 +1716,6 @@
         const endStr = days[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         document.getElementById('planner-period-label').textContent = `${startStr} - ${endStr}`;
 
-        // Auto-update Grocery bounds
         document.getElementById('grocery-start-date').value = days[0].toISOString().split('T')[0];
         document.getElementById('grocery-end-date').value = days[6].toISOString().split('T')[0];
 
@@ -1708,11 +1729,15 @@
           const card = document.createElement('div');
           card.className = `bg-white rounded-xl border border-cream-200 p-3 min-h-[140px] flex flex-col justify-between ${isToday ? 'ring-1 ring-terracotta' : ''}`;
           
-          let dishListHtml = assignedRecipes.map(rec => `
-            <div onclick="openAssignModal('${key}')" class="p-1.5 mb-1 bg-cream-50 border border-cream-200 rounded-lg cursor-pointer hover:border-terracotta flex items-center justify-between">
-              <div class="truncate">
+          let dishListHtml = assignedRecipes.map((rec, idx) => `
+            <div class="p-1.5 mb-1 bg-cream-50 border border-cream-200 rounded-lg flex items-center justify-between">
+              <div onclick="openAssignModal('${key}')" class="truncate flex-1 cursor-pointer">
                 <span class="text-[9px] text-terracotta font-semibold block leading-none">${rec.type}</span>
                 <p class="text-xs font-bold text-charcoal truncate">${rec.name}</p>
+              </div>
+              <div class="flex items-center space-x-1 pl-1">
+                ${idx > 0 ? `<button onclick="reorderDayDish('${key}', ${idx}, -1)" class="text-[10px] text-gray-400 hover:text-charcoal px-0.5">▲</button>` : ''}
+                ${idx < assignedRecipes.length - 1 ? `<button onclick="reorderDayDish('${key}', ${idx}, 1)" class="text-[10px] text-gray-400 hover:text-charcoal px-0.5">▼</button>` : ''}
               </div>
             </div>
           `).join('');
@@ -1806,14 +1831,16 @@
         return;
       }
 
-      container.innerHTML = assignedRecipes.map(rec => `
+      container.innerHTML = assignedRecipes.map((rec, idx) => `
         <div class="p-2 bg-cream-100 rounded-lg border border-cream-200 flex items-center justify-between">
           <div>
             <span class="text-[9px] font-semibold text-terracotta block">${rec.type}</span>
             <p class="font-bold text-xs text-charcoal">${rec.name}</p>
           </div>
-          <div class="flex items-center space-x-2">
-            <button onclick="closeAssignModal(); openPreviewModal('${rec.id}');" class="text-[10px] bg-terracotta text-white px-2 py-0.5 rounded hover:bg-terracotta-hover">View</button>
+          <div class="flex items-center space-x-1.5">
+            ${idx > 0 ? `<button onclick="reorderDayDish('${selectedDateForAssign}', ${idx}, -1)" class="text-xs text-gray-500 hover:text-charcoal px-1">▲</button>` : ''}
+            ${idx < assignedRecipes.length - 1 ? `<button onclick="reorderDayDish('${selectedDateForAssign}', ${idx}, 1)" class="text-xs text-gray-500 hover:text-charcoal px-1">▼</button>` : ''}
+            <button onclick="closeAssignModal(); openPreviewModal('${rec.id}');" class="text-[10px] bg-terracotta text-white px-2 py-0.5 rounded hover:bg-terracotta-hover ml-1">View</button>
             <button onclick="removeRecipeFromDate('${rec.id}')" class="text-gray-400 hover:text-red-500 text-sm font-bold px-1">&times;</button>
           </div>
         </div>
@@ -1896,7 +1923,7 @@
       }
     }
 
-    // GROCERY LIST
+    // GROCERY LIST (WITH FULL PANTRY COVERAGE STRIKETHROUGH)
     function generateGroceryList() {
       const startStr = document.getElementById('grocery-start-date').value;
       const endStr = document.getElementById('grocery-end-date').value;
@@ -1995,14 +2022,15 @@
           const pantryMatch = pantry.find(p => makeKey(p.name) === itemKeyStr && (p.unit || '').toLowerCase().trim() === item.unit.toLowerCase());
           const inPantry = pantryMatch ? Number(pantryMatch.qty) : 0;
           const toBuy = Math.max(0, item.qty - inPantry);
+          const isFullyCovered = inPantry >= item.qty;
 
           return `
             <div class="py-2.5 px-4 flex items-center justify-between hover:bg-cream-100 transition border-b border-cream-100 last:border-none text-xs">
-              <span onclick="inspectIngredient('${item.key}')" class="font-medium cursor-pointer hover:underline text-charcoal">
-                ${item.name} 🔍
+              <span onclick="inspectIngredient('${item.key}')" class="font-medium cursor-pointer hover:underline ${isFullyCovered ? 'line-through text-gray-400' : 'text-charcoal'}">
+                ${item.name} ${isFullyCovered ? '✓' : '🔍'}
               </span>
               <div class="text-right">
-                <span class="font-bold text-terracotta">${toBuy} ${item.unit || ''}</span>
+                <span class="font-bold ${isFullyCovered ? 'text-gray-400 line-through' : 'text-terracotta'}">${toBuy} ${item.unit || ''}</span>
                 ${inPantry > 0 ? `<p class="text-[10px] text-sage font-semibold">Pantry: ${inPantry} / ${item.qty} needed</p>` : ''}
               </div>
             </div>
@@ -2048,7 +2076,7 @@
       document.getElementById('inspector-modal').classList.remove('hidden');
     }
 
-    // SHOP MODE & PAUSE / RESUME SESSIONS
+    // SHOP MODE & SESSION MANAGEMENT
     function checkActiveShopSessionBanner() {
       const banner = document.getElementById('active-shop-banner');
       if (pausedShopSession && pausedShopSession.length > 0) {
@@ -2072,21 +2100,29 @@
 
       initCategorySelects();
 
-      activeShopItems = items.map(i => {
+      // Automatically filter out items that are fully covered by pantry stock
+      activeShopItems = [];
+      items.forEach(i => {
         const itemKeyStr = makeKey(i.name);
         const pantryMatch = pantry.find(p => makeKey(p.name) === itemKeyStr && (p.unit || '').toLowerCase().trim() === i.unit.toLowerCase());
         const inPantry = pantryMatch ? Number(pantryMatch.qty) : 0;
         const toBuy = Math.max(0, i.qty - inPantry);
 
-        return {
-          id: `shop-${Date.now()}-${Math.random()}`,
-          name: i.name,
-          qty: toBuy > 0 ? toBuy : i.qty,
-          unit: i.unit,
-          category: i.category || '🧂 Pantry Staples',
-          purchased: false
-        };
+        if (toBuy > 0) {
+          activeShopItems.push({
+            id: `shop-${Date.now()}-${Math.random()}`,
+            name: i.name,
+            qty: toBuy,
+            unit: i.unit,
+            category: i.category || '🧂 Pantry Staples',
+            purchased: false
+          });
+        }
       });
+
+      if (activeShopItems.length === 0) {
+        return alert("All required items are already fully covered in your pantry stock!");
+      }
 
       renderShopModeItems();
       document.getElementById('shop-mode-modal').classList.remove('hidden');
@@ -2097,6 +2133,16 @@
       saveState();
       closeShopMode();
       checkActiveShopSessionBanner();
+    }
+
+    function stopAndDiscardShopSession() {
+      if (confirm("Are you sure you want to stop and cancel this shopping session? Unsaved progress will be lost.")) {
+        pausedShopSession = null;
+        activeShopItems = [];
+        saveState();
+        closeShopMode();
+        checkActiveShopSessionBanner();
+      }
     }
 
     function resumeShopMode() {
@@ -2257,7 +2303,7 @@
           const matchKey = makeKey(item.name);
           const pItem = pantry.find(p => makeKey(p.name) === matchKey);
 
-          boughtLogItems.push({ name: item.name, qty: norm.qty, unit: norm.unit, category: item.category });
+          boughtLogItems.push({ name: item.name, qty: norm.qty, unit: norm.unit, category: item.category, paidPhp: 0 });
 
           if (pItem) {
             pItem.qty += norm.qty;
@@ -2275,7 +2321,6 @@
         }
       });
 
-      // Save Shop Log
       if (boughtLogItems.length > 0) {
         shopLogs.unshift({
           id: `log-${Date.now()}`,
@@ -2302,7 +2347,7 @@
       document.getElementById('shop-mode-modal').classList.add('hidden');
     }
 
-    // SHOP LOG VIEW
+    // SHOP LOG & PRICE TRACKER
     function renderShopLogs() {
       const container = document.getElementById('shoplog-container');
       container.innerHTML = '';
@@ -2312,16 +2357,25 @@
         return;
       }
 
-      shopLogs.forEach((log, idx) => {
+      shopLogs.forEach((log, logIdx) => {
         const dateStr = new Date(log.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
         const box = document.createElement('details');
         box.className = 'bg-white rounded-xl border border-cream-200 shadow-sm overflow-hidden';
         
-        const itemRows = log.items ? log.items.map(i => `
-          <div class="py-2 px-4 flex justify-between text-xs border-b border-cream-100 last:border-none">
-            <span class="font-bold text-charcoal">${i.name}</span>
-            <span class="text-terracotta font-bold">${i.qty} ${i.unit} <span class="text-[9px] text-gray-400 font-normal">(${i.category})</span></span>
+        let totalTripCost = 0;
+        log.items.forEach(i => totalTripCost += (parseFloat(i.paidPhp) || 0));
+
+        const itemRows = log.items ? log.items.map((item, itemIdx) => `
+          <div class="py-2.5 px-4 flex items-center justify-between text-xs border-b border-cream-100 last:border-none gap-2">
+            <div>
+              <span class="font-bold text-charcoal block">${item.name}</span>
+              <span class="text-[10px] text-gray-400">${item.qty} ${item.unit} • ${item.category}</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-[10px] font-bold text-gray-500">₱</span>
+              <input type="number" step="0.5" value="${item.paidPhp || ''}" placeholder="Price" onchange="updateShopLogPrice(${logIdx}, ${itemIdx}, this.value)" class="w-20 px-2 py-1 text-xs border border-cream-300 rounded font-bold text-terracotta bg-cream-50 text-right">
+            </div>
           </div>
         `).join('') : '';
 
@@ -2329,14 +2383,25 @@
           <summary class="px-4 py-3 bg-cream-100 font-bold text-xs text-charcoal cursor-pointer flex justify-between items-center select-none">
             <div class="flex items-center space-x-2">
               <span>🛍️ ${dateStr}</span>
-              <span class="text-[10px] bg-sage-light text-sage px-2 py-0.5 rounded-full">${log.itemCount} items restocked</span>
+              <span class="text-[10px] bg-sage-light text-sage px-2 py-0.5 rounded-full font-bold">${log.itemCount} items</span>
             </div>
-            ${isLoggedIn ? `<button onclick="deleteShopLog('${log.id}')" title="Delete Log" class="text-gray-400 hover:text-red-500 text-sm px-1">&times;</button>` : ''}
+            <div class="flex items-center space-x-3">
+              <span class="text-xs font-bold text-terracotta">${totalTripCost > 0 ? `₱${totalTripCost.toFixed(2)}` : 'Tap to set prices'}</span>
+              ${isLoggedIn ? `<button onclick="deleteShopLog('${log.id}')" title="Delete Log" class="text-gray-400 hover:text-red-500 text-sm px-1">&times;</button>` : ''}
+            </div>
           </summary>
           <div class="divide-y divide-cream-100">${itemRows}</div>
         `;
         container.appendChild(box);
       });
+    }
+
+    function updateShopLogPrice(logIdx, itemIdx, val) {
+      if (shopLogs[logIdx] && shopLogs[logIdx].items[itemIdx]) {
+        shopLogs[logIdx].items[itemIdx].paidPhp = parseFloat(val) || 0;
+        saveState();
+        renderShopLogs();
+      }
     }
 
     function deleteShopLog(id) {
@@ -2357,7 +2422,7 @@
       }
     }
 
-    // PANTRY SECTION
+    // PANTRY SECTION (WITH 1-TAP ZERO STOCK & SAFE MODAL DELETE)
     function renderPantry() {
       const container = document.getElementById('pantry-container');
       const jumpContainer = document.getElementById('pantry-jump-pills');
@@ -2405,7 +2470,7 @@
             <div class="flex items-center space-x-2 flex-shrink-0">
               <input type="number" step="0.1" value="${item.qty}" onchange="updatePantryQty('${item.id}', this.value)" class="w-16 px-1.5 py-0.5 text-xs border border-cream-300 rounded text-center bg-white font-bold text-charcoal">
               <span class="text-xs font-semibold text-sage bg-sage-light px-2 py-0.5 rounded min-w-[36px] text-center">${item.unit || 'pcs'}</span>
-              <button onclick="deletePantryItem('${item.id}')" title="Delete" class="text-gray-400 hover:text-red-500 text-sm p-1">&times;</button>
+              <button onclick="zeroPantryQty('${item.id}')" title="Set stock to 0" class="text-xs bg-cream-200 hover:bg-cream-300 text-charcoal px-1.5 py-0.5 rounded font-bold transition">0️⃣</button>
             </div>
           </div>
         `).join('');
@@ -2419,6 +2484,22 @@
         `;
         container.appendChild(box);
       });
+    }
+
+    function zeroPantryQty(id) {
+      const item = pantry.find(p => p.id === id);
+      if (item && item.qty > 0) {
+        previousPantrySnapshot = JSON.parse(JSON.stringify(pantry));
+        item.qty = 0;
+        item.modifiedAt = Date.now();
+        saveState();
+        renderPantry();
+
+        document.getElementById('undo-banner-title').textContent = `Set "${item.name}" stock to 0!`;
+        const banner = document.getElementById('undo-restock-banner');
+        banner.classList.remove('hidden');
+        setTimeout(() => banner.classList.add('hidden'), 10000);
+      }
     }
 
     function openPantryEditModal(id) {
@@ -2461,6 +2542,37 @@
       closePantryEditModal();
     }
 
+    function deletePantryItemFromModal() {
+      const id = document.getElementById('edit-pantry-id').value;
+      const item = pantry.find(p => p.id === id);
+      if (!item) return;
+
+      const targetKey = makeKey(item.name);
+      const usingRecipes = recipes.filter(r => 
+        r.ingredients && r.ingredients.some(i => makeKey(i.name) === targetKey)
+      );
+
+      if (usingRecipes.length > 0) {
+        const recipeListStr = usingRecipes.map(r => `• ${r.name}`).join('\n');
+        const confirmForce = confirm(`"${item.name}" is listed in these recipes:\n\n${recipeListStr}\n\nDo you want to Force Delete this pantry entry anyway?\n(Your recipes will stay safe!)`);
+        
+        if (confirmForce) {
+          pantry = pantry.filter(p => p.id !== id);
+          saveState();
+          renderPantry();
+          closePantryEditModal();
+        }
+        return;
+      }
+
+      if (confirm(`Remove "${item.name}" from your pantry inventory?`)) {
+        pantry = pantry.filter(p => p.id !== id);
+        saveState();
+        renderPantry();
+        closePantryEditModal();
+      }
+    }
+
     function addCustomPantryItem() {
       const name = document.getElementById('pantry-name-input').value.trim();
       const qty = parseFloat(document.getElementById('pantry-qty-input').value) || 0;
@@ -2484,34 +2596,6 @@
       if (item) {
         item.qty = Math.max(0, parseFloat(newQty) || 0);
         item.modifiedAt = Date.now();
-        saveState();
-        renderPantry();
-      }
-    }
-
-    function deletePantryItem(id) {
-      const item = pantry.find(p => p.id === id);
-      if (!item) return;
-
-      const targetKey = makeKey(item.name);
-      const usingRecipes = recipes.filter(r => 
-        r.ingredients && r.ingredients.some(i => makeKey(i.name) === targetKey)
-      );
-
-      if (usingRecipes.length > 0) {
-        const recipeListStr = usingRecipes.map(r => `• ${r.name}`).join('\n');
-        const confirmForce = confirm(`"${item.name}" is listed in these recipes:\n\n${recipeListStr}\n\nDo you want to Force Delete this pantry entry anyway?\n(Your recipes will stay safe!)`);
-        
-        if (confirmForce) {
-          pantry = pantry.filter(p => p.id !== id);
-          saveState();
-          renderPantry();
-        }
-        return;
-      }
-
-      if (confirm(`Remove "${item.name}" from your pantry inventory?`)) {
-        pantry = pantry.filter(p => p.id !== id);
         saveState();
         renderPantry();
       }
