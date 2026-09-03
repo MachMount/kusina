@@ -57,7 +57,7 @@
 </head>
 <body class="font-sans min-h-screen flex flex-col antialiased selection:bg-terracotta selection:text-white">
 
-  <!-- Floating Reverted Undo Banner (Original Bottom-Right Position) -->
+  <!-- Floating Reverted Undo Banner -->
   <div id="undo-restock-banner" class="fixed bottom-5 right-5 z-50 bg-charcoal text-white p-4 rounded-2xl shadow-2xl flex items-center space-x-3 hidden animate-bounce max-w-xs sm:max-w-sm">
     <span class="text-xl">⚠️</span>
     <div class="text-xs flex-1">
@@ -82,13 +82,16 @@
       
       <!-- Action Controls -->
       <div class="flex items-center space-x-1.5 flex-shrink-0">
+        <button id="cloud-indicator-btn" onclick="fetchPublicMasterData(true)" class="p-2 sm:px-3 sm:py-1.5 text-xs font-semibold rounded-lg border border-cream-300 bg-cream-50 hover:bg-cream-200 transition flex items-center space-x-1" title="Tap to refresh cloud sync">
+          <span id="cloud-indicator-dot">🟢</span> <span id="cloud-indicator-text" class="hidden sm:inline">Synced</span>
+        </button>
         <button id="sync-status-btn" onclick="handleAuthButtonClick()" class="p-2 sm:px-3 sm:py-1.5 text-xs font-semibold rounded-lg border transition flex items-center space-x-1" title="Admin Login / Logout">
           <span id="sync-icon">🔒</span> <span id="sync-label" class="hidden sm:inline">Admin Login</span>
         </button>
         <button onclick="exportData()" class="p-2 sm:px-3 sm:py-1.5 text-xs font-medium text-charcoal bg-cream-50 hover:bg-cream-200 border border-cream-300 rounded-lg transition flex items-center space-x-1" title="Export Local Backup">
           <span>📥</span> <span class="hidden sm:inline">Backup</span>
         </button>
-        <label class="p-2 sm:px-3 sm:py-1.5 text-xs font-medium text-charcoal bg-cream-50 hover:bg-cream-200 border border-cream-300 rounded-lg transition cursor-pointer flex items-center space-x-1" title="Restore Local Backup">
+        <label id="restore-backup-label" class="admin-only hidden p-2 sm:px-3 sm:py-1.5 text-xs font-medium text-charcoal bg-cream-50 hover:bg-cream-200 border border-cream-300 rounded-lg transition cursor-pointer flex items-center space-x-1" title="Restore Cloud Backup (Admin Only)">
           <span>📤</span> <span class="hidden sm:inline">Restore</span>
           <input type="file" id="importFileInput" onchange="importData(event)" class="hidden" accept=".json">
         </label>
@@ -201,7 +204,7 @@
           <button onclick="resumeShopMode()" class="bg-sage hover:opacity-90 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-sm transition">
             Resume Shop Session 🛍️
           </button>
-          <button onclick="stopAndDiscardShopSession()" class="bg-cream-200 hover:bg-cream-300 text-charcoal font-bold text-xs px-3 py-1.5 rounded-lg transition" title="Cancel Session">
+          <button onclick="stopAndDiscardShopSession()" class="admin-only hidden bg-cream-200 hover:bg-cream-300 text-charcoal font-bold text-xs px-3 py-1.5 rounded-lg transition" title="Cancel Session">
             ⏹️ Cancel Session
           </button>
         </div>
@@ -212,10 +215,12 @@
           <div class="flex items-center space-x-2 flex-wrap">
             <h3 class="font-serif font-bold text-lg text-charcoal">Categorized Shopping List</h3>
             <span id="grocery-count-badge" class="text-xs bg-cream-200 text-charcoal px-2.5 py-0.5 rounded-full font-semibold">0 items</span>
-            <!-- NEW ESTIMATED TOTAL PRICE BADGE -->
-            <span id="grocery-estimated-price-badge" class="text-xs bg-terracotta-light text-terracotta ring-1 ring-terracotta px-2.5 py-0.5 rounded-full font-bold">Est. Total: ₱0.00</span>
+            <!-- TOGGLABLE ESTIMATED PRICE BADGE -->
+            <button onclick="toggleItemPriceBreakdown()" id="grocery-estimated-price-badge" class="text-xs bg-terracotta-light text-terracotta ring-1 ring-terracotta px-2.5 py-0.5 rounded-full font-bold hover:bg-terracotta hover:text-white transition cursor-pointer" title="Click to toggle item price breakdown">
+              Est. Total: ₱0.00 👁️
+            </button>
           </div>
-          <button onclick="startShopMode()" class="bg-sage hover:opacity-90 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm flex items-center space-x-1.5 transition">
+          <button onclick="startShopMode()" class="admin-only hidden bg-sage hover:opacity-90 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm flex items-center space-x-1.5 transition">
             <span>🛍️</span> <span>Start Shop Mode</span>
           </button>
         </div>
@@ -233,16 +238,17 @@
           <h2 class="font-serif text-2xl font-bold text-charcoal">Pantry Inventory</h2>
           <p class="text-xs text-gray-600">Tap any ingredient to view recipes & average prices, or use 0️⃣ to quick-zero stock.</p>
         </div>
-        <button onclick="cleanupPantryDuplicates()" class="bg-cream-100 hover:bg-cream-200 text-charcoal text-xs font-semibold px-3 py-2 rounded-lg border border-cream-300 transition self-start sm:self-auto">
+        <button onclick="cleanupPantryDuplicates()" class="admin-only hidden bg-cream-100 hover:bg-cream-200 text-charcoal text-xs font-semibold px-3 py-2 rounded-lg border border-cream-300 transition self-start sm:self-auto">
           🧹 Merge Duplicates
         </button>
       </div>
 
       <div id="pantry-jump-pills" class="flex flex-wrap gap-1.5 overflow-x-auto custom-scroll pb-1"></div>
 
-      <div class="bg-cream-100 p-4 rounded-xl border border-cream-200 flex flex-wrap gap-2 items-center">
+      <!-- Add Stock Bar (Admin Only) -->
+      <div class="admin-only hidden bg-cream-100 p-4 rounded-xl border border-cream-200 flex flex-wrap gap-2 items-center">
         <input type="text" id="pantry-name-input" placeholder="Custom Item" class="flex-1 min-w-[150px] px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
-        <input type="number" id="pantry-qty-input" placeholder="Qty" step="0.1" class="w-20 px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+        <input type="number" id="pantry-qty-input" inputmode="decimal" data-lpignore="true" data-1p-ignore="true" placeholder="Qty" step="0.1" class="w-20 px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
         <select id="pantry-unit-input" class="w-24 px-2 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
           <option value="ml">ml</option>
           <option value="g">g</option>
@@ -282,7 +288,7 @@
   <!-- Footer -->
   <footer class="mt-auto py-6 border-t border-cream-200 bg-cream-100 text-left px-6 text-xs text-gray-500 font-medium">
     <div>Prompt Coded by ✈️.</div>
-    <div>September 2026. <span onclick="openChangelogModal()" class="text-terracotta font-bold hover:underline cursor-pointer">v24</span></div>
+    <div>September 2026. <span onclick="openChangelogModal()" class="text-terracotta font-bold hover:underline cursor-pointer">v25</span></div>
   </footer>
 
   <!-- MODAL: CHANGELOG -->
@@ -295,17 +301,17 @@
       
       <div class="p-5 overflow-y-auto space-y-4 custom-scroll text-xs flex-1">
         <div class="border-l-2 border-terracotta pl-3 space-y-1">
+          <span class="font-bold text-charcoal">v25 — Togglable Item Prices, Strict Admin Controls & Cloud Indicator</span>
+          <p class="text-gray-600">Added togglable individual line item price estimates in Grocery view, secured all edit options strictly for Admin mode, prevented password manager prompts on numeric stock inputs, re-introduced a live Cloud Status Indicator, and made Restore admin-only.</p>
+        </div>
+
+        <div class="border-l-2 border-cream-300 pl-3 space-y-1">
           <span class="font-bold text-charcoal">v24 — Full Cloud-First Engine & Estimated Grocery Total</span>
-          <p class="text-gray-600">Transitioned to a pure Cloud-First architecture with real-time Firebase WebSockets, eliminated local cache overwrites, added Est. Total Price to the Grocery List, and restored the original bottom-right position for the Undo popup.</p>
+          <p class="text-gray-600">Transitioned to a pure Cloud-First architecture with real-time Firebase WebSockets, eliminated local cache overwrites, and added Est. Total Price to the Grocery List.</p>
         </div>
 
         <div class="border-l-2 border-cream-300 pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v23 — Self-Contained Undo Button & Pantry Insights</span>
-          <p class="text-gray-600">Replaced 0-stock popup with inline undo button timer, added recipe/price drawers to Pantry & Shop Log tabs, and bottom-sorted strikethrough items in Grocery List.</p>
-        </div>
-
-        <div class="border-l-2 border-cream-300 pl-3 space-y-1">
-          <span class="font-bold text-charcoal">v1-v22 — Core Architecture & Feature Expansions</span>
+          <span class="font-bold text-charcoal">v1-v23 — Core Architecture & Feature Expansions</span>
           <p class="text-gray-600">Initial releases featuring Recipe Manager, Pantry Inventory, Calorie Calculator, Dynamic Autocomplete, Grocery Aggregation, and Focus Cook View.</p>
         </div>
       </div>
@@ -342,7 +348,7 @@
         <input type="text" id="shop-impulse-name" autocomplete="off" placeholder="Add Impulse Item" oninput="handleImpulseAutocomplete(this)" onblur="hideImpulseAutocomplete(this)" class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
         <div id="shop-impulse-suggestions" class="absolute left-0 right-0 top-full mt-1 bg-white border border-cream-300 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto hidden"></div>
       </div>
-      <input type="number" id="shop-impulse-qty" placeholder="Qty" step="0.1" value="1" class="w-16 px-2 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+      <input type="number" id="shop-impulse-qty" inputmode="decimal" data-lpignore="true" data-1p-ignore="true" placeholder="Qty" step="0.1" value="1" class="w-16 px-2 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
       <select id="shop-impulse-unit" class="w-20 px-1 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
         <option value="pcs">pcs</option>
         <option value="g">g</option>
@@ -408,7 +414,7 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Current Stock Qty</label>
-            <input type="number" id="edit-pantry-qty" step="0.1" class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
+            <input type="number" id="edit-pantry-qty" inputmode="decimal" data-lpignore="true" data-1p-ignore="true" step="0.1" class="w-full px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
           </div>
           <div>
             <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Unit</label>
@@ -455,7 +461,7 @@
       
       <div>
         <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Password</label>
-        <input type="password" id="admin-password-input" placeholder="Enter password..." class="w-full px-3 py-2 text-xs rounded-lg border border-cream-300 focus:outline-none focus:ring-1 focus:ring-terracotta bg-white">
+        <input type="password" id="admin-password-input" name="kusina_admin_pass_field" autocomplete="current-password" placeholder="Enter password..." class="w-full px-3 py-2 text-xs rounded-lg border border-cream-300 focus:outline-none focus:ring-1 focus:ring-terracotta bg-white">
       </div>
 
       <div class="flex justify-end items-center space-x-2 pt-2">
@@ -502,14 +508,14 @@
           </div>
           <div>
             <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-1">Servings</label>
-            <input type="number" id="form-recipe-servings" placeholder="e.g. 2" min="1" value="2" class="w-full px-3 py-2 text-xs rounded-lg border border-cream-300 bg-white">
+            <input type="number" id="form-recipe-servings" inputmode="numeric" data-lpignore="true" data-1p-ignore="true" placeholder="e.g. 2" min="1" value="2" class="w-full px-3 py-2 text-xs rounded-lg border border-cream-300 bg-white">
           </div>
           <div>
             <div class="flex justify-between items-center mb-1">
               <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-600">Total Calories</label>
               <button onclick="autoCalculateCalories()" type="button" class="text-[9px] text-terracotta font-bold hover:underline">✨ Auto-Calc</button>
             </div>
-            <input type="number" id="form-recipe-calories" placeholder="e.g. 800" min="0" class="w-full px-3 py-2 text-xs rounded-lg border border-cream-300 bg-white">
+            <input type="number" id="form-recipe-calories" inputmode="numeric" data-lpignore="true" data-1p-ignore="true" placeholder="e.g. 800" min="0" class="w-full px-3 py-2 text-xs rounded-lg border border-cream-300 bg-white">
           </div>
         </div>
 
@@ -549,7 +555,7 @@
         <div id="current-assigned-list" class="space-y-1.5 max-h-36 overflow-y-auto custom-scroll"></div>
       </div>
 
-      <div class="border-t border-cream-200 pt-2 space-y-2">
+      <div class="admin-only hidden border-t border-cream-200 pt-2 space-y-2">
         <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-500">Add Dish to Day</label>
         <div class="flex gap-1.5">
           <input type="search" id="assign-search" autocomplete="off" oninput="renderAssignRecipeList()" placeholder="🔍 Search dishes..." class="flex-1 px-3 py-1.5 text-xs rounded-lg border border-cream-300 bg-white">
@@ -560,13 +566,12 @@
           </select>
         </div>
         <div id="assign-type-filters" class="flex flex-wrap gap-1"></div>
+        <div class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll" id="assign-recipe-list"></div>
       </div>
 
-      <div class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll" id="assign-recipe-list"></div>
-
       <div class="flex justify-between items-center pt-2 border-t border-cream-200">
-        <button onclick="clearDayRecipes()" class="text-xs text-red-600 font-semibold hover:underline">Clear Entire Day</button>
-        <button onclick="closeAssignModal()" class="px-3 py-1.5 text-xs bg-cream-200 text-charcoal rounded-md font-medium">Done</button>
+        <button onclick="clearDayRecipes()" class="admin-only hidden text-xs text-red-600 font-semibold hover:underline">Clear Entire Day</button>
+        <button onclick="closeAssignModal()" class="px-3 py-1.5 text-xs bg-cream-200 text-charcoal rounded-md font-medium ml-auto">Done</button>
       </div>
     </div>
   </div>
@@ -590,8 +595,8 @@
       <div id="inspector-body" class="space-y-2 text-xs text-charcoal max-h-60 overflow-y-auto custom-scroll"></div>
       
       <div class="flex justify-between items-center pt-2 border-t border-cream-200">
-        <button id="inspector-edit-pantry-btn" onclick="openPantryEditModalFromInspector()" class="text-xs text-terracotta font-bold hover:underline">✏️ Edit Pantry Stock</button>
-        <button onclick="closeInspectorModal()" class="px-3 py-1.5 text-xs bg-cream-200 rounded-md font-medium">Close</button>
+        <button id="inspector-edit-pantry-btn" onclick="openPantryEditModalFromInspector()" class="admin-only hidden text-xs text-terracotta font-bold hover:underline">✏️ Edit Pantry Stock</button>
+        <button onclick="closeInspectorModal()" class="px-3 py-1.5 text-xs bg-cream-200 rounded-md font-medium ml-auto">Close</button>
       </div>
     </div>
   </div>
@@ -684,7 +689,7 @@
         <button onclick="exitCookMode()" class="px-3 py-2 bg-cream-200 hover:bg-cream-300 text-charcoal text-xs font-bold rounded-xl transition">
           Done (Keep Stock)
         </button>
-        <button onclick="openDeductModal()" class="px-4 py-2 bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold rounded-xl shadow-sm transition">
+        <button onclick="openDeductModal()" class="admin-only hidden px-4 py-2 bg-terracotta hover:bg-terracotta-hover text-white text-xs font-bold rounded-xl shadow-sm transition">
           Done & Deduct Stock 📦
         </button>
       </div>
@@ -773,6 +778,7 @@
     let isLoggedIn = localStorage.getItem('ks_isLoggedIn') === 'true';
 
     let savedSortPreference = localStorage.getItem('ks_sortPreference') || "name-asc";
+    let showIndividualGroceryPrices = false;
 
     let selectedTypeFilter = "ALL";
     let assignTypeFilter = "ALL";
@@ -825,12 +831,34 @@
         label.textContent = "Admin Login";
         document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
       }
+
+      renderPantry();
+      renderPlanner();
+      renderShopLogs();
+      renderRecipes();
+    }
+
+    function updateCloudStatusIndicator(status) {
+      const dot = document.getElementById('cloud-indicator-dot');
+      const text = document.getElementById('cloud-indicator-text');
+
+      if (status === 'syncing') {
+        dot.textContent = "🟡";
+        text.textContent = "Fetching...";
+      } else if (status === 'synced') {
+        dot.textContent = "🟢";
+        text.textContent = "Synced";
+      } else {
+        dot.textContent = "🔴";
+        text.textContent = "Offline";
+      }
     }
 
     // CLOUD-FIRST ENGINE (Push direct updates to Firebase Cloud)
     async function syncTabToCloud(tabKey, dataObj) {
       if (!isLoggedIn) return;
       try {
+        updateCloudStatusIndicator('syncing');
         let payload = dataObj;
         if (tabKey === 'mealPlans') {
           payload = {};
@@ -845,30 +873,38 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+        updateCloudStatusIndicator('synced');
       } catch (e) {
         console.error(`Firebase ${tabKey} push error:`, e);
+        updateCloudStatusIndicator('error');
       }
     }
 
     async function saveRecipeToCloud(recipeObj) {
       if (!isLoggedIn) return;
       try {
+        updateCloudStatusIndicator('syncing');
         await fetch(`${FIREBASE_DB_URL}recipes/${recipeObj.id}.json`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(recipeObj)
         });
+        updateCloudStatusIndicator('synced');
       } catch (e) {
         console.error("Firebase recipe push error:", e);
+        updateCloudStatusIndicator('error');
       }
     }
 
     async function deleteRecipeFromCloud(recipeId) {
       if (!isLoggedIn) return;
       try {
+        updateCloudStatusIndicator('syncing');
         await fetch(`${FIREBASE_DB_URL}recipes/${recipeId}.json`, { method: 'DELETE' });
+        updateCloudStatusIndicator('synced');
       } catch (e) {
         console.error("Firebase recipe delete error:", e);
+        updateCloudStatusIndicator('error');
       }
     }
 
@@ -884,18 +920,20 @@
     }
 
     // Realtime Firebase Cloud Listener (Fetches master data without caching interference)
-    async function fetchPublicMasterData() {
+    async function fetchPublicMasterData(showAlert = false) {
       try {
+        updateCloudStatusIndicator('syncing');
+
         const resRec = await fetch(`${FIREBASE_DB_URL}recipes.json`);
         if (resRec.ok) {
           const data = await resRec.json();
-          if (data) recipes = Object.values(data);
+          recipes = data ? Object.values(data) : [];
         }
 
         const resPan = await fetch(`${FIREBASE_DB_URL}pantry.json`);
         if (resPan.ok) {
           const dataPan = await resPan.json();
-          if (dataPan) pantry = Array.isArray(dataPan) ? dataPan : Object.values(dataPan);
+          pantry = dataPan ? (Array.isArray(dataPan) ? dataPan : Object.values(dataPan)) : [];
         }
 
         const resPlan = await fetch(`${FIREBASE_DB_URL}mealPlans.json`);
@@ -911,21 +949,26 @@
               }
             });
             mealPlans = parsedPlans;
+          } else {
+            mealPlans = {};
           }
         }
 
         const resLog = await fetch(`${FIREBASE_DB_URL}shopLogs.json`);
         if (resLog.ok) {
           const dataLog = await resLog.json();
-          if (dataLog) shopLogs = Array.isArray(dataLog) ? dataLog : Object.values(dataLog);
+          shopLogs = dataLog ? (Array.isArray(dataLog) ? dataLog : Object.values(dataLog)) : [];
         }
 
+        updateCloudStatusIndicator('synced');
         syncPantryWithRecipes();
         renderRecipes();
         renderPlanner();
         renderShopLogs();
+        if (showAlert) alert('Refreshed latest data from Cloud!');
       } catch (e) {
         console.warn("Error pulling master cloud state:", e);
+        updateCloudStatusIndicator('error');
       }
     }
 
@@ -946,10 +989,7 @@
         updateSyncUI();
         closeLoginModal();
         await fetchPublicMasterData();
-        renderRecipes();
-        renderPlanner();
-        renderShopLogs();
-        alert("Admin Mode active! Live cloud sync enabled for all tabs.");
+        alert("Admin Mode active! Live cloud editing unlocked.");
       } else {
         alert("Incorrect password.");
       }
@@ -959,8 +999,6 @@
       isLoggedIn = false;
       localStorage.setItem('ks_isLoggedIn', 'false');
       updateSyncUI();
-      renderRecipes();
-      renderShopLogs();
     }
 
     function syncPantryWithRecipes() {
@@ -1010,11 +1048,11 @@
       });
 
       pantry = Object.values(consolidatedPantryMap);
-      saveState();
       generateGroceryList();
     }
 
     function cleanupPantryDuplicates() {
+      if (!isLoggedIn) return;
       const mergedMap = {};
 
       pantry.forEach(item => {
@@ -1051,6 +1089,7 @@
 
       pantry = Object.values(mergedMap);
       syncPantryWithRecipes();
+      saveState();
       renderPantry();
       alert('Duplicate pantry entries successfully merged!');
     }
@@ -1200,6 +1239,7 @@
     }
 
     function openRecipeModal(recipeToEdit = null) {
+      if (!isLoggedIn) return;
       const modal = document.getElementById('recipe-modal');
       const title = document.getElementById('modal-recipe-title');
       const ingContainer = document.getElementById('ingredients-rows');
@@ -1250,7 +1290,7 @@
           <div class="autocomplete-suggestions absolute left-0 right-0 top-full mt-1 bg-white border border-cream-300 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto hidden"></div>
         </div>
         <div class="flex items-center space-x-1.5">
-          <input type="number" placeholder="Qty" step="0.1" value="${qty}" class="ing-qty w-16 px-2 py-1 text-xs rounded-md border border-cream-300">
+          <input type="number" inputmode="decimal" data-lpignore="true" data-1p-ignore="true" placeholder="Qty" step="0.1" value="${qty}" class="ing-qty w-16 px-2 py-1 text-xs rounded-md border border-cream-300">
           <select class="ing-unit w-20 px-1 py-1 text-xs rounded-md border border-cream-300 bg-white">${unitOptions}</select>
           <select class="ing-cat flex-1 sm:w-28 px-1.5 py-1 text-[10px] rounded-md border border-cream-300 bg-white">${catOptions}</select>
           <button onclick="this.closest('.ing-row').remove()" class="text-gray-400 hover:text-red-500 text-base px-1">&times;</button>
@@ -1543,7 +1583,7 @@
     }
 
     function openDeductModal() {
-      if (!activeCookRecipe || !activeCookRecipe.ingredients) return;
+      if (!isLoggedIn || !activeCookRecipe || !activeCookRecipe.ingredients) return;
       const previewList = document.getElementById('deduct-preview-list');
 
       previewList.innerHTML = activeCookRecipe.ingredients.map(ing => {
@@ -1575,7 +1615,7 @@
     }
 
     function confirmAndDeductStock() {
-      if (!activeCookRecipe || !activeCookRecipe.ingredients) return;
+      if (!isLoggedIn || !activeCookRecipe || !activeCookRecipe.ingredients) return;
 
       previousPantrySnapshot = JSON.parse(JSON.stringify(pantry));
 
@@ -1603,6 +1643,7 @@
     }
 
     function undoLastAction() {
+      if (!isLoggedIn) return;
       if (previousPantrySnapshot) {
         pantry = JSON.parse(JSON.stringify(previousPantrySnapshot));
         previousPantrySnapshot = null;
@@ -1654,6 +1695,7 @@
     }
 
     function reorderDayDish(dateKey, idx, dir) {
+      if (!isLoggedIn) return;
       const list = getMealPlanListForDate(dateKey);
       if (idx + dir < 0 || idx + dir >= list.length) return;
 
@@ -1723,10 +1765,12 @@
                 <span class="text-[9px] text-terracotta font-semibold block leading-none">${rec.type}</span>
                 <p class="text-xs font-bold text-charcoal truncate">${rec.name}</p>
               </div>
-              <div class="flex items-center space-x-1 pl-1">
-                ${idx > 0 ? `<button onclick="reorderDayDish('${key}', ${idx}, -1)" class="text-[10px] text-gray-400 hover:text-charcoal px-0.5">▲</button>` : ''}
-                ${idx < assignedRecipes.length - 1 ? `<button onclick="reorderDayDish('${key}', ${idx}, 1)" class="text-[10px] text-gray-400 hover:text-charcoal px-0.5">▼</button>` : ''}
-              </div>
+              ${isLoggedIn ? `
+                <div class="flex items-center space-x-1 pl-1">
+                  ${idx > 0 ? `<button onclick="reorderDayDish('${key}', ${idx}, -1)" class="text-[10px] text-gray-400 hover:text-charcoal px-0.5">▲</button>` : ''}
+                  ${idx < assignedRecipes.length - 1 ? `<button onclick="reorderDayDish('${key}', ${idx}, 1)" class="text-[10px] text-gray-400 hover:text-charcoal px-0.5">▼</button>` : ''}
+                </div>
+              ` : ''}
             </div>
           `).join('');
 
@@ -1739,7 +1783,7 @@
               ${dailyCals > 0 ? `<p class="text-[9px] font-bold text-terracotta mb-2">🔥 ${dailyCals} kcal</p>` : ''}
               <div class="space-y-1">${dishListHtml}</div>
             </div>
-            <button onclick="openAssignModal('${key}')" class="w-full py-1.5 mt-2 border border-dashed border-cream-300 rounded-lg text-xs text-gray-500 hover:text-charcoal hover:bg-cream-100 font-medium">+ Add Dish</button>
+            ${isLoggedIn ? `<button onclick="openAssignModal('${key}')" class="w-full py-1.5 mt-2 border border-dashed border-cream-300 rounded-lg text-xs text-gray-500 hover:text-charcoal hover:bg-cream-100 font-medium">+ Add Dish</button>` : ''}
           `;
           grid.appendChild(card);
         });
@@ -1826,16 +1870,17 @@
             <p class="font-bold text-xs text-charcoal">${rec.name}</p>
           </div>
           <div class="flex items-center space-x-1.5">
-            ${idx > 0 ? `<button onclick="reorderDayDish('${selectedDateForAssign}', ${idx}, -1)" class="text-xs text-gray-500 hover:text-charcoal px-1">▲</button>` : ''}
-            ${idx < assignedRecipes.length - 1 ? `<button onclick="reorderDayDish('${selectedDateForAssign}', ${idx}, 1)" class="text-xs text-gray-500 hover:text-charcoal px-1">▼</button>` : ''}
+            ${isLoggedIn && idx > 0 ? `<button onclick="reorderDayDish('${selectedDateForAssign}', ${idx}, -1)" class="text-xs text-gray-500 hover:text-charcoal px-1">▲</button>` : ''}
+            ${isLoggedIn && idx < assignedRecipes.length - 1 ? `<button onclick="reorderDayDish('${selectedDateForAssign}', ${idx}, 1)" class="text-xs text-gray-500 hover:text-charcoal px-1">▼</button>` : ''}
             <button onclick="closeAssignModal(); openPreviewModal('${rec.id}');" class="text-[10px] bg-terracotta text-white px-2 py-0.5 rounded hover:bg-terracotta-hover ml-1">View</button>
-            <button onclick="removeRecipeFromDate('${rec.id}')" class="text-gray-400 hover:text-red-500 text-sm font-bold px-1">&times;</button>
+            ${isLoggedIn ? `<button onclick="removeRecipeFromDate('${rec.id}')" class="text-gray-400 hover:text-red-500 text-sm font-bold px-1">&times;</button>` : ''}
           </div>
         </div>
       `).join('');
     }
 
     function renderAssignRecipeList() {
+      if (!isLoggedIn) return;
       const search = document.getElementById('assign-search').value.toLowerCase().trim();
       const sort = document.getElementById('assign-sort').value;
       const list = document.getElementById('assign-recipe-list');
@@ -1878,7 +1923,7 @@
     }
 
     function addRecipeToDate(recipeId) {
-      if (!selectedDateForAssign) return;
+      if (!isLoggedIn || !selectedDateForAssign) return;
       const list = getMealPlanListForDate(selectedDateForAssign);
       if (!list.includes(recipeId)) {
         list.push(recipeId);
@@ -1890,7 +1935,7 @@
     }
 
     function removeRecipeFromDate(recipeId) {
-      if (!selectedDateForAssign) return;
+      if (!isLoggedIn || !selectedDateForAssign) return;
       let list = getMealPlanListForDate(selectedDateForAssign);
       list = list.filter(id => id !== recipeId);
 
@@ -1903,7 +1948,7 @@
     }
 
     function clearDayRecipes() {
-      if (selectedDateForAssign) {
+      if (isLoggedIn && selectedDateForAssign) {
         delete mealPlans[selectedDateForAssign];
         saveState();
         renderPlanner();
@@ -1911,7 +1956,12 @@
       }
     }
 
-    // GROCERY LIST (WITH ESTIMATED TOTAL PRICE)
+    // GROCERY LIST (WITH TOGGLABLE ITEM PRICE BREAKDOWN)
+    function toggleItemPriceBreakdown() {
+      showIndividualGroceryPrices = !showIndividualGroceryPrices;
+      generateGroceryList();
+    }
+
     function generateGroceryList() {
       const startStr = document.getElementById('grocery-start-date').value;
       const endStr = document.getElementById('grocery-end-date').value;
@@ -2000,7 +2050,9 @@
           }
         }
       });
-      document.getElementById('grocery-estimated-price-badge').textContent = `Est. Total: ₱${totalEstPrice.toFixed(2)}`;
+      
+      const badgeBtn = document.getElementById('grocery-estimated-price-badge');
+      badgeBtn.textContent = `Est. Total: ₱${totalEstPrice.toFixed(2)} ${showIndividualGroceryPrices ? '👁️' : '🙈'}`;
 
       if (items.length === 0) {
         container.innerHTML = `<p class="text-center text-gray-400 text-xs py-6">No recipes scheduled within this date range.</p>`;
@@ -2039,6 +2091,17 @@
           const toBuy = Math.max(0, item.qty - inPantry);
           const isFullyCovered = inPantry >= item.qty;
 
+          const priceData = calculateAverageUnitPrice(item.name);
+          let itemPriceStr = "";
+          if (showIndividualGroceryPrices && toBuy > 0) {
+            if (priceData) {
+              const itemTotal = toBuy * parseFloat(priceData.avg);
+              itemPriceStr = `<span class="text-[10px] text-terracotta font-bold block">(~₱${priceData.avg}/${item.unit} = ₱${itemTotal.toFixed(2)})</span>`;
+            } else {
+              itemPriceStr = `<span class="text-[10px] text-gray-400 italic block">(No price log)</span>`;
+            }
+          }
+
           return `
             <div class="py-2.5 px-4 flex items-center justify-between hover:bg-cream-100 transition border-b border-cream-100 last:border-none text-xs ${isFullyCovered ? 'bg-cream-100/40' : ''}">
               <span onclick="openPantryIngredientInspector('${item.name.replace(/'/g, "\\'")}')" class="font-medium cursor-pointer hover:underline ${isFullyCovered ? 'line-through text-gray-400' : 'text-charcoal'}">
@@ -2046,6 +2109,7 @@
               </span>
               <div class="text-right">
                 <span class="font-bold ${isFullyCovered ? 'text-gray-400 line-through' : 'text-terracotta'}">${toBuy} ${item.unit || ''}</span>
+                ${itemPriceStr}
                 ${inPantry > 0 ? `<p class="text-[10px] text-sage font-semibold">Pantry: ${inPantry} / ${item.qty} needed</p>` : ''}
               </div>
             </div>
@@ -2074,6 +2138,7 @@
     }
 
     function startShopMode() {
+      if (!isLoggedIn) return;
       if (pausedShopSession && pausedShopSession.length > 0) {
         if (confirm("You have a paused shop session. Would you like to resume it?")) {
           return resumeShopMode();
@@ -2122,6 +2187,7 @@
     }
 
     function stopAndDiscardShopSession() {
+      if (!isLoggedIn) return;
       if (confirm("Are you sure you want to stop and cancel this shopping session? Unsaved progress will be lost.")) {
         pausedShopSession = null;
         activeShopItems = [];
@@ -2238,7 +2304,7 @@
               </div>
               
               <div class="flex items-center space-x-1.5 flex-shrink-0">
-                <input type="number" step="0.1" value="${item.qty}" onchange="updateShopItemQty(${globalIdx}, this.value)" class="w-16 px-1.5 py-1 text-xs border border-cream-300 rounded text-center font-bold text-terracotta bg-white">
+                <input type="number" inputmode="decimal" data-lpignore="true" data-1p-ignore="true" step="0.1" value="${item.qty}" onchange="updateShopItemQty(${globalIdx}, this.value)" class="w-16 px-1.5 py-1 text-xs border border-cream-300 rounded text-center font-bold text-terracotta bg-white">
                 <span class="text-xs font-semibold text-sage bg-sage-light px-2 py-1 rounded min-w-[36px] text-center">${item.unit}</span>
                 <button onclick="removeShopItem(${globalIdx})" class="text-gray-400 hover:text-red-500 text-sm p-1">&times;</button>
               </div>
@@ -2280,6 +2346,7 @@
     }
 
     function confirmAndRestockPantry() {
+      if (!isLoggedIn) return;
       previousPantrySnapshot = JSON.parse(JSON.stringify(pantry));
       const boughtLogItems = [];
 
@@ -2386,7 +2453,11 @@
             </div>
             <div class="flex items-center space-x-2">
               <span class="text-[10px] font-bold text-gray-500">₱</span>
-              <input type="number" step="0.5" value="${item.paidPhp || ''}" placeholder="Price" onchange="updateShopLogPrice(${logIdx}, ${itemIdx}, this.value)" class="w-20 px-2 py-1 text-xs border border-cream-300 rounded font-bold text-terracotta bg-cream-50 text-right">
+              ${isLoggedIn ? `
+                <input type="number" inputmode="decimal" data-lpignore="true" data-1p-ignore="true" step="0.5" value="${item.paidPhp || ''}" placeholder="Price" onchange="updateShopLogPrice(${logIdx}, ${itemIdx}, this.value)" class="w-20 px-2 py-1 text-xs border border-cream-300 rounded font-bold text-terracotta bg-cream-50 text-right">
+              ` : `
+                <span class="font-bold text-terracotta">${item.paidPhp ? `₱${parseFloat(item.paidPhp).toFixed(2)}` : '--'}</span>
+              `}
             </div>
           </div>
         `).join('') : '';
@@ -2398,7 +2469,7 @@
               <span class="text-[10px] bg-sage-light text-sage px-2 py-0.5 rounded-full font-bold">${log.itemCount} items</span>
             </div>
             <div class="flex items-center space-x-3">
-              <span class="text-xs font-bold text-terracotta">${totalTripCost > 0 ? `₱${totalTripCost.toFixed(2)}` : 'Tap to set prices'}</span>
+              <span class="text-xs font-bold text-terracotta">${totalTripCost > 0 ? `₱${totalTripCost.toFixed(2)}` : 'Tap to expand'}</span>
               ${isLoggedIn ? `<button onclick="deleteShopLog('${log.id}')" title="Delete Log" class="text-gray-400 hover:text-red-500 text-sm px-1">&times;</button>` : ''}
             </div>
           </summary>
@@ -2409,6 +2480,7 @@
     }
 
     function updateShopLogPrice(logIdx, itemIdx, val) {
+      if (!isLoggedIn) return;
       if (shopLogs[logIdx] && shopLogs[logIdx].items[itemIdx]) {
         shopLogs[logIdx].items[itemIdx].paidPhp = parseFloat(val) || 0;
         saveState();
@@ -2483,10 +2555,15 @@
               </div>
               
               <div class="flex items-center space-x-2 flex-shrink-0">
-                <input type="number" step="0.1" value="${item.qty}" onchange="updatePantryQty('${item.id}', this.value)" class="w-16 px-1.5 py-0.5 text-xs border border-cream-300 rounded text-center bg-white font-bold text-charcoal">
+                ${isLoggedIn ? `
+                  <input type="number" inputmode="decimal" data-lpignore="true" data-1p-ignore="true" step="0.1" value="${item.qty}" onchange="updatePantryQty('${item.id}', this.value)" class="w-16 px-1.5 py-0.5 text-xs border border-cream-300 rounded text-center bg-white font-bold text-charcoal">
+                ` : `
+                  <span class="font-bold text-charcoal px-2">${item.qty}</span>
+                `}
+                
                 <span class="text-xs font-semibold text-sage bg-sage-light px-2 py-0.5 rounded min-w-[36px] text-center">${item.unit || 'pcs'}</span>
                 
-                ${isPendingUndo ? `
+                ${isLoggedIn ? (isPendingUndo ? `
                   <button onclick="undoSelfZeroPantry('${item.id}')" class="text-[10px] bg-terracotta hover:bg-terracotta-hover text-white px-2 py-0.5 rounded font-bold transition">
                     ↺ Undo
                   </button>
@@ -2494,7 +2571,7 @@
                   <button onclick="zeroPantryQtySelf('${item.id}')" title="Set stock to 0" class="text-xs bg-cream-200 hover:bg-cream-300 text-charcoal px-1.5 py-0.5 rounded font-bold transition">
                     0️⃣
                   </button>
-                `}
+                `) : ''}
               </div>
             </div>
           `;
@@ -2512,6 +2589,7 @@
     }
 
     function zeroPantryQtySelf(id) {
+      if (!isLoggedIn) return;
       const item = pantry.find(p => p.id === id);
       if (item && item.qty > 0) {
         activeZeroTimers[id] = item.qty;
@@ -2532,6 +2610,7 @@
     }
 
     function undoSelfZeroPantry(id) {
+      if (!isLoggedIn) return;
       const prevQty = activeZeroTimers[id];
       if (prevQty !== undefined) {
         const item = pantry.find(p => p.id === id);
@@ -2547,6 +2626,7 @@
     }
 
     function openPantryEditModal(id) {
+      if (!isLoggedIn) return;
       const item = pantry.find(p => p.id === id);
       if (!item) return;
 
@@ -2564,6 +2644,7 @@
     }
 
     function savePantryItemEdit() {
+      if (!isLoggedIn) return;
       const id = document.getElementById('edit-pantry-id').value;
       const item = pantry.find(p => p.id === id);
       if (!item) return;
@@ -2582,12 +2663,14 @@
       item.modifiedAt = Date.now();
 
       syncPantryWithRecipes();
+      saveState();
       renderPantry();
       generateGroceryList();
       closePantryEditModal();
     }
 
     function deletePantryItemFromModal() {
+      if (!isLoggedIn) return;
       const id = document.getElementById('edit-pantry-id').value;
       const item = pantry.find(p => p.id === id);
       if (!item) return;
@@ -2621,6 +2704,7 @@
     }
 
     function addCustomPantryItem() {
+      if (!isLoggedIn) return;
       const name = document.getElementById('pantry-name-input').value.trim();
       const qty = parseFloat(document.getElementById('pantry-qty-input').value) || 0;
       const unit = document.getElementById('pantry-unit-input').value;
@@ -2632,6 +2716,7 @@
 
       pantry.push({ id: `pan-${Date.now()}`, name, qty: normalized.qty, unit: normalized.unit, category, modifiedAt: Date.now() });
       syncPantryWithRecipes();
+      saveState();
       renderPantry();
       generateGroceryList();
 
@@ -2640,6 +2725,7 @@
     }
 
     function updatePantryQty(id, newQty) {
+      if (!isLoggedIn) return;
       const item = pantry.find(p => p.id === id);
       if (item) {
         item.qty = Math.max(0, parseFloat(newQty) || 0);
@@ -2669,6 +2755,7 @@
     }
 
     function openPantryEditModalFromInspector() {
+      if (!isLoggedIn) return;
       closeInspectorModal();
       const targetKey = makeKey(currentInspectedIngredient);
       const item = pantry.find(p => makeKey(p.name) === targetKey);
@@ -2735,6 +2822,7 @@
     }
 
     function importData(event) {
+      if (!isLoggedIn) return alert("Admin Login required to restore data.");
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
@@ -2750,7 +2838,7 @@
           renderRecipes();
           renderPlanner();
           renderShopLogs();
-          alert('Kusina backup imported successfully!');
+          alert('Kusina backup imported and synced to Firebase!');
         } catch (err) {
           alert('Invalid JSON file format.');
         }
